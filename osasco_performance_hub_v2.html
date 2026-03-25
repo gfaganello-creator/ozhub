@@ -3,15 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<style>
+/* ── EMBED OPTIMIZATION ── */
+html,body{width:100%;min-height:100vh;margin:0;padding:0;overflow-x:hidden}
+iframe{border:none}
+</style>
 <title>Osasco Sporting FC — Performance Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,400&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root{--az:#46a2f7;--az2:#1a6fa8;--az3:#0d2e42;--bk:#070E14;--c1:#0f1923;--c2:#1c2a38;--c3:#2a3f52;--wh:#f0f4f8;--ww:#fff;--gr:#2ecc8e;--gv:#1de99b;--re:#ef4444;--ye:#f59e0b;--go:#ceaa78;--ts:#7a9bb5}
 *{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
-body{background:var(--bk);color:var(--wh);font-family:'Barlow',sans-serif;font-weight:300;overflow-x:hidden}
+body{background:var(--bk);color:var(--wh);font-family:'Barlow',sans-serif;font-weight:300;overflow-x:hidden;width:100%;max-width:100%}
 
 /* HEADER */
-header{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(7,14,20,.94);backdrop-filter:blur(16px);border-bottom:1px solid rgba(70,162,247,.12);padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:68px}
+header{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(7,14,20,.94);backdrop-filter:blur(16px);border-bottom:1px solid rgba(70,162,247,.12);padding:0 clamp(16px,4vw,48px);display:flex;align-items:center;justify-content:space-between;height:68px}
 .hb{display:flex;align-items:center;gap:20px}
 .hl{display:flex;align-items:center;gap:14px}
 .oz-wrap{width:44px;height:44px;overflow:hidden;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(206,170,120,.35),0 0 20px rgba(70,162,247,.25);flex-shrink:0}
@@ -28,7 +34,7 @@ nav a:hover{color:var(--az);background:rgba(70,162,247,.08)}
 .bna:hover{background:#6ab8fa!important}
 
 /* STATUS BAR */
-.sbar{position:fixed;top:68px;left:0;right:0;z-index:99;background:rgba(12,26,40,.96);backdrop-filter:blur(8px);border-bottom:1px solid rgba(70,162,247,.07);padding:0 48px;display:flex;align-items:center;gap:28px;height:36px;font-size:11px}
+.sbar{position:fixed;top:68px;left:0;right:0;z-index:99;background:rgba(12,26,40,.96);backdrop-filter:blur(8px);border-bottom:1px solid rgba(70,162,247,.07);padding:0 clamp(16px,4vw,48px);display:flex;align-items:center;gap:28px;height:36px;font-size:11px}
 .si{display:flex;align-items:center;gap:7px}
 .sd{width:6px;height:6px;border-radius:50%;animation:pulse 2s infinite}
 .sd.lv{background:var(--gr);box-shadow:0 0 6px var(--gr)}
@@ -44,7 +50,7 @@ nav a:hover{color:var(--az);background:rgba(70,162,247,.08)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
 /* HERO */
-.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:140px 80px 80px;position:relative;overflow:hidden}
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:140px clamp(24px,5vw,80px) 80px;position:relative;overflow:hidden}
 .hbg{position:absolute;inset:0;background:radial-gradient(ellipse 70% 70% at 85% 50%,rgba(70,162,247,.07) 0%,transparent 65%),radial-gradient(ellipse 40% 50% at 15% 80%,rgba(30,233,155,.04) 0%,transparent 60%),linear-gradient(170deg,var(--bk) 0%,#081520 100%)}
 .hgr{position:absolute;inset:0;background-image:linear-gradient(rgba(70,162,247,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(70,162,247,.03) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse at center,black 40%,transparent 80%)}
 .hesc{position:absolute;right:80px;top:50%;transform:translateY(-50%);width:340px;height:340px;opacity:.05}
@@ -68,7 +74,7 @@ nav a:hover{color:var(--az);background:rgba(70,162,247,.08)}
 @keyframes fu{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
 
 /* SECTIONS */
-section{padding:96px 80px}
+section{padding:96px clamp(24px,5vw,80px)}
 #dashboard{background:var(--c1)}
 #relatorio{background:var(--c1)}
 .sh{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:40px;padding-bottom:18px;border-bottom:1px solid rgba(70,162,247,.1)}
@@ -95,6 +101,22 @@ section{padding:96px 80px}
 .cd{background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:4px;padding:24px}
 .cdt{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--wh);margin-bottom:3px}
 .cds{font-size:10px;color:var(--ts);margin-bottom:20px}
+
+/* RESPONSIVE */
+@media(max-width:1100px){
+  .kg{grid-template-columns:repeat(2,1fr)}
+  .cr{grid-template-columns:1fr}
+  .cr2{grid-template-columns:1fr 1fr}
+  .hkpis{position:relative;right:auto;bottom:auto;margin-top:36px;justify-content:flex-start}
+  .hesc{display:none}
+}
+@media(max-width:700px){
+  .kg{grid-template-columns:1fr 1fr}
+  .cr2{grid-template-columns:1fr}
+  nav a:not(.bna){display:none}
+  .sbar .si:nth-child(n+4){display:none}
+  .cl{grid-template-columns:1fr}
+}
 
 /* BAR CHART */
 .bc{display:flex;align-items:flex-end;gap:10px;height:140px}
