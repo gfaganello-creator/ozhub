@@ -2738,11 +2738,11 @@ function carregarProgramacoes() {
     .then(function(r){return r.text();})
     .then(function(txt){
       if(!txt||txt.length<10) return;
-      function pcsv(line){var r=[],c='',q=false;for(var i=0;i<line.length;i++){var ch=line[i];if(ch==='"'){q=!q;}else if(ch===','&&!q){r.push(c.trim());c='';}else{c+=ch;}}r.push(c.trim());return r;}
+      function pcsv(line){var r=[],c='',q=false;for(var i=0;i<line.length;i++){var ch=line[i];if(ch==='"'){if(q&&line[i+1]==='"'){c+='"';i++;}else{q=!q;}}else if(ch===','&&!q){r.push(c);c='';}else{c+=ch;}}r.push(c);return r;}
       var lines=txt.split('\n');
       var hdrs=pcsv(lines[0]).map(function(h){return h.replace(/^"|"$/g,'').trim();});
       var rows=lines.slice(1).filter(function(l){return l.trim();}).map(function(l){
-        var vs=pcsv(l);var o={};hdrs.forEach(function(h,i){o[h]=(vs[i]||'').replace(/^"|"$/g,'').trim();});return o;
+        var vs=pcsv(l);var o={};hdrs.forEach(function(h,i){o[h]=(vs[i]||'');});return o;
       });
       // Filtra linhas sem semana definida (registros de teste/vazios)
       rows = rows.filter(function(r){ return r['Semana Inicio Raw'] && r['Semana Inicio Raw'].trim(); });
