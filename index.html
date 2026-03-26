@@ -2598,12 +2598,25 @@ function confirmarProg() {
     email: 'gfaganello@osascosporting.com.br',
     isEdit: isEdit ? 'true' : 'false'
   });
+  // Tenta POST primeiro
   fetch(SCRIPT_URL2, {
     method: 'POST',
     mode: 'no-cors',
     headers: {'Content-Type': 'text/plain'},
     body: postData
   }).catch(function(){});
+  // GET como backup garantido (Apps Script processa GET sem problemas de CORS)
+  setTimeout(function() {
+    var gp = new URLSearchParams({
+      action: 'saveProgamacao', modo: progModo, progId: progId,
+      local: data.local, horManha: data.horManha, horTarde: data.horTarde,
+      obs: data.obs, semanaInicio: data.inicio,
+      dias: JSON.stringify(data.dias),
+      email: 'gfaganello@osascosporting.com.br',
+      isEdit: isEdit ? 'true' : 'false'
+    });
+    new Image().src = SCRIPT_URL2 + '?' + gp.toString();
+  }, 500);
 
   // Link usa semanaInicio para buscar a programacao (mais confiavel que UUID)
   var progLink = 'https://gfaganello-creator.github.io/ozhub/prog.html?semana=' + encodeURIComponent(data.inicio);
