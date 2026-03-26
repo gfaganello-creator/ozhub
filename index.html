@@ -281,6 +281,18 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
 .el-input:focus{border-color:rgba(70,162,247,.4)}
 .el-modal-footer{display:flex;gap:12px;justify-content:flex-end;margin-top:24px}
 
+
+.el-alert{display:none;margin-bottom:20px;background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.25);border-radius:6px;padding:14px 18px}
+.el-alert.show{display:block}
+.el-alert-title{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--re);margin-bottom:8px}
+.el-alert-list{display:flex;flex-direction:column;gap:4px}
+.el-alert-item{font-size:12px;color:var(--wh)}
+.el-alert-item span{font-weight:700}
+.cv-ok{color:var(--gr);font-size:11px}
+.cv-warn{color:var(--ye);font-size:11px;font-weight:700}
+.cv-urgent{color:#ff6b35;font-size:11px;font-weight:700}
+.cv-expired{color:var(--re);font-size:11px;font-weight:700}
+
 </style>
 </head>
 <body>
@@ -761,6 +773,10 @@ document.querySelectorAll('a[href^="#"]').forEach(a=>{
     </div>
   </div>
   <div class="el-body">
+    <div class="el-alert" id="el-alert">
+      <div class="el-alert-title">&#9888; Contratos com vencimento critico</div>
+      <div class="el-alert-list" id="el-alert-list"></div>
+    </div>
     <div class="el-stats">
       <div class="el-stat"><div class="el-stat__val az" id="el-total">-</div><div class="el-stat__label">Total no Elenco</div></div>
       <div class="el-stat"><div class="el-stat__val gr" id="el-ativos">-</div><div class="el-stat__label">Contratos Ativos</div></div>
@@ -866,6 +882,7 @@ async function elCarregar() {
       return obj;
     });
     elStats2();
+    elAlerta();
     elMostrar();
   } catch(e) {
     document.getElementById('el-tbody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:red;padding:32px">Erro ao carregar dados.</td></tr>';
@@ -880,6 +897,34 @@ function elStats2() {
   document.getElementById('el-ativos').textContent=a;
   document.getElementById('el-empr').textContent=e;
   document.getElementById('el-resc').textContent=rs;
+}
+function elAlerta() {
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var criticos = elDados2.filter(function(r) {
+    if(r['Status Contrato']!=='Ativo') return false;
+    var valStr=r['Validade Contrato']||'';
+    if(!valStr) return false;
+    var parts=valStr.split('/');
+    var valDate = parts.length===3 ? new Date(parts[2],parts[1]-1,parts[0]) : new Date(valStr);
+    if(isNaN(valDate)) return false;
+    var diff=Math.ceil((valDate-hoje)/(1000*60*60*24));
+    return diff<=60;
+  });
+  var alertDiv=document.getElementById('el-alert');
+  var alertList=document.getElementById('el-alert-list');
+  if(criticos.length>0) {
+    alertDiv.classList.add('show');
+    alertList.innerHTML = criticos.map(function(r) {
+      var valStr=r['Validade Contrato']||'';
+      var parts=valStr.split('/');
+      var valDate = parts.length===3 ? new Date(parts[2],parts[1]-1,parts[0]) : new Date(valStr);
+      var diff=Math.ceil((valDate-hoje)/(1000*60*60*24));
+      var label = diff<0 ? 'VENCIDO' : 'vence em '+diff+' dias';
+      return '<div class="el-alert-item"><span>'+(r['Apelido']||r['Nome Completo'])+'</span> &mdash; '+label+' ('+valStr+')</div>';
+    }).join('');
+  } else {
+    alertDiv.classList.remove('show');
+  }
 }
 function elMostrar() {
   var busca=(document.getElementById('el-search').value||'').toLowerCase();
