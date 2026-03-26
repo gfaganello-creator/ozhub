@@ -2730,9 +2730,9 @@ function mostrarSucesso(isEdit, pdfLink, data) {
     + '\n'
     + '\uD83D\uDCC5 Semana: ' + semana + '\n'
     + '\uD83C\uDFC3 Treinos na semana: ' + treinos + '\n'
-    + (pdfLink ? '\uD83D\uDCCE PDF: ' + pdfLink + '\n' : '')
+    + (pdfLink ? '\uD83D\uDCCB Ver programacao: ' + pdfLink + '\n' : '')
     + '\n'
-    + '\uD83D\uDD17 Acompanhe no OZ HUB:\n' + hubUrl;
+    + '\uD83D\uDD17 OZ HUB: ' + hubUrl;
   var waUrl = 'https://wa.me/?text=' + encodeURIComponent(waMsg);
   var pdfBtn = pdfLink ? '<a href="' + pdfLink + '" target="_blank" class="el-btn el-btn-secondary" style="text-decoration:none;font-size:11px;display:inline-block">\uD83D\uDCC4 PDF Download</a>' : '';
   var waBtn = '<a href="' + waUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff;font-family:Barlow Condensed,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:8px 16px;border-radius:3px;cursor:pointer;text-decoration:none">\uD83D\uDCF1 WhatsApp</a>';
