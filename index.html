@@ -2500,6 +2500,9 @@ function fecharProgModal() {
   var pc = document.getElementById('prog-preview-content');
   if(pc) pc.innerHTML = '';
   _progDataPendente = null;
+  // Restaura footer e outros elementos
+  var allDivs = document.querySelectorAll('#prog-preview-bg .prog-modal-body > div');
+  allDivs.forEach(function(d){ d.style.display=''; });
 }
 
 function getProgData() {
@@ -2710,7 +2713,6 @@ function editarProg(idx, rawStr) {
 
 
 function mostrarSucesso(isEdit, pdfLink, data) {
-  console.trace('mostrarSucesso chamado de:');
   var hubUrl = 'https://gfaganello-creator.github.io/ozhub/';
   var diasVals = data ? Object.values(data.dias) : [];
   var semana = diasVals.length >= 7
@@ -2732,6 +2734,13 @@ function mostrarSucesso(isEdit, pdfLink, data) {
   var waUrl = 'https://wa.me/?text=' + encodeURIComponent(waMsg);
   var pdfBtn = pdfLink ? '<a href="' + pdfLink + '" target="_blank" class="el-btn el-btn-secondary" style="text-decoration:none;font-size:11px;display:inline-block">\uD83D\uDCC4 PDF Download</a>' : '';
   var waBtn = '<a href="' + waUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff;font-family:Barlow Condensed,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:8px 16px;border-radius:3px;cursor:pointer;text-decoration:none">\uD83D\uDCF1 WhatsApp</a>';
+  // Esconde footer com botoes Confirmar/Voltar
+  var footer = document.querySelector('#prog-preview-bg .el-modal-footer');
+  if(footer) footer.style.display = 'none';
+  var emailBox = document.querySelector('#prog-preview-bg .el-form-group, #prog-preview-bg div[style*="Email"]');
+  // Esconde bloco de email tambem
+  var allDivs = document.querySelectorAll('#prog-preview-bg .prog-modal-body > div');
+  allDivs.forEach(function(d){ if(d.id !== 'prog-preview-content') d.style.display='none'; });
   document.getElementById('prog-preview-content').innerHTML =
     '<div style="text-align:center;padding:24px">' +
     '<div style="font-size:40px;margin-bottom:12px">' + (isEdit ? '\u26a0\ufe0f' : '\u2705') + '</div>' +
