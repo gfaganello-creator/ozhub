@@ -725,6 +725,72 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
       <div class="el-form-group"><label class="el-label">Validade Contrato *</label><input class="el-input" id="el-f-validade" type="date"></div>
       <div class="el-form-group"><label class="el-label">Tipo Contrato</label><select class="el-input" id="el-f-tipo"><option>Efetivo</option><option>Emprestimo</option></select></div>
       <div class="el-form-group"><label class="el-label">Registrado por</label><input class="el-input" id="el-f-resp" placeholder="Seu nome"></div>
+      <div class="el-form-group full" style="margin-top:8px">
+        <label class="el-label" style="margin-bottom:10px">Documentos</label>
+        <div style="display:flex;flex-direction:column;gap:8px" id="novo-docs-list">
+          <!-- RG/CPF -->
+          <div style="background:rgba(15,25,35,.6);border:1px solid rgba(70,162,247,.08);border-radius:5px;padding:10px 14px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:12px;color:var(--wh);font-weight:500">RG / CPF</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span id="novo-doc-status-0" class="el-doc-status doc-pend" style="font-size:10px">○ Pendente</span>
+                <input type="file" id="novo-doc-file-0" style="display:none" onchange="novoDocUpload(0,'RG / CPF')">
+                <button class="el-doc-upload-btn" onclick="document.getElementById('novo-doc-file-0').click()" style="font-size:10px;padding:4px 10px">↑ Anexar</button>
+              </div>
+            </div>
+            <div id="novo-doc-info-0" style="margin-top:6px;display:none">
+              <a id="novo-doc-link-0" href="#" target="_blank" style="font-size:11px;color:var(--az)">🔗 Ver arquivo</a>
+              <span id="novo-doc-prog-0" style="font-size:10px;color:var(--ts);margin-left:8px"></span>
+            </div>
+          </div>
+          <!-- Contrato Assinado -->
+          <div style="background:rgba(15,25,35,.6);border:1px solid rgba(70,162,247,.08);border-radius:5px;padding:10px 14px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:12px;color:var(--wh);font-weight:500">Contrato Assinado</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span id="novo-doc-status-1" class="el-doc-status doc-pend" style="font-size:10px">○ Pendente</span>
+                <input type="file" id="novo-doc-file-1" style="display:none" onchange="novoDocUpload(1,'Contrato Assinado')">
+                <button class="el-doc-upload-btn" onclick="document.getElementById('novo-doc-file-1').click()" style="font-size:10px;padding:4px 10px">↑ Anexar</button>
+              </div>
+            </div>
+            <div id="novo-doc-info-1" style="margin-top:6px;display:none">
+              <a id="novo-doc-link-1" href="#" target="_blank" style="font-size:11px;color:var(--az)">🔗 Ver arquivo</a>
+              <span id="novo-doc-prog-1" style="font-size:10px;color:var(--ts);margin-left:8px"></span>
+            </div>
+          </div>
+          <!-- Atestado Médico -->
+          <div style="background:rgba(15,25,35,.6);border:1px solid rgba(70,162,247,.08);border-radius:5px;padding:10px 14px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:12px;color:var(--wh);font-weight:500">Atestado Médico</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span id="novo-doc-status-2" class="el-doc-status doc-pend" style="font-size:10px">○ Pendente</span>
+                <input type="file" id="novo-doc-file-2" style="display:none" onchange="novoDocUpload(2,'Atestado Medico')">
+                <button class="el-doc-upload-btn" onclick="document.getElementById('novo-doc-file-2').click()" style="font-size:10px;padding:4px 10px">↑ Anexar</button>
+              </div>
+            </div>
+            <div id="novo-doc-info-2" style="margin-top:6px;display:none">
+              <a id="novo-doc-link-2" href="#" target="_blank" style="font-size:11px;color:var(--az)">🔗 Ver arquivo</a>
+              <span id="novo-doc-prog-2" style="font-size:10px;color:var(--ts);margin-left:8px"></span>
+            </div>
+          </div>
+          <!-- Foto Oficial -->
+          <div style="background:rgba(15,25,35,.6);border:1px solid rgba(70,162,247,.08);border-radius:5px;padding:10px 14px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:12px;color:var(--wh);font-weight:500">Foto Oficial</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span id="novo-doc-status-3" class="el-doc-status doc-pend" style="font-size:10px">○ Pendente</span>
+                <input type="file" id="novo-doc-file-3" style="display:none" onchange="novoDocUpload(3,'Foto Oficial')">
+                <button class="el-doc-upload-btn" onclick="document.getElementById('novo-doc-file-3').click()" style="font-size:10px;padding:4px 10px">↑ Anexar</button>
+              </div>
+            </div>
+            <div id="novo-doc-info-3" style="margin-top:6px;display:none">
+              <a id="novo-doc-link-3" href="#" target="_blank" style="font-size:11px;color:var(--az)">🔗 Ver arquivo</a>
+              <span id="novo-doc-prog-3" style="font-size:10px;color:var(--ts);margin-left:8px"></span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--ts);margin-top:8px;font-style:italic">Documentos enviados ficam salvos no Google Drive automaticamente.</div>
+      </div>
     </div>
     <div class="el-modal-footer">
       <button class="el-btn el-btn-secondary" onclick="document.getElementById('el-modal-bg').classList.remove('open')">Cancelar</button>
@@ -1404,11 +1470,75 @@ function elMostrar() {
   }).join('');
   document.getElementById('el-tbody').innerHTML=html;
 }
+
+// Temp storage for new athlete docs
+var novoDocLinks = {0:'',1:'',2:'',3:''};
+var novoDocNomes = ['RG / CPF','Contrato Assinado','Atestado Medico','Foto Oficial'];
+
+function novoDocUpload(idx, docType) {
+  var fileInput = document.getElementById('novo-doc-file-'+idx);
+  if(!fileInput || !fileInput.files[0]) return;
+  var file = fileInput.files[0];
+  var prog = document.getElementById('novo-doc-prog-'+idx);
+  var status = document.getElementById('novo-doc-status-'+idx);
+  if(prog) prog.textContent = 'Enviando...';
+  // Temp name using timestamp since athlete not saved yet
+  var tempId = 'novo_' + Date.now();
+  var nomeAtleta = document.getElementById('el-f-nome').value.trim() || 'Novo Atleta';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result.split(',')[1];
+    fetch(SCRIPT_URL2, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        action:'uploadDoc',
+        atletaId: tempId,
+        atletaNome: nomeAtleta,
+        docType: docType,
+        fileName: file.name,
+        fileData: base64,
+        mimeType: file.type
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if(data.success) {
+        novoDocLinks[idx] = data.link;
+        if(status) { status.className='el-doc-status doc-ok'; status.textContent='✓ Entregue'; }
+        var infoDiv = document.getElementById('novo-doc-info-'+idx);
+        var linkEl = document.getElementById('novo-doc-link-'+idx);
+        if(infoDiv) infoDiv.style.display='block';
+        if(linkEl) linkEl.href = data.link;
+        if(prog) prog.textContent = '';
+      } else {
+        if(prog) prog.textContent = 'Erro ao enviar';
+      }
+    })
+    .catch(function(){ if(prog) prog.textContent='Erro de conexao'; });
+  };
+  reader.readAsDataURL(file);
+}
+
 function elSalvar() {
   var nome=document.getElementById('el-f-nome').value.trim();
   var pos=document.getElementById('el-f-posicao').value;
   if(!nome||!pos){ alert('Preencha Nome e Posicao.'); return; }
-  alert('Atleta "'+nome+'" registrado!\nAdicione na aba Contratos do Sheets para sincronizar.');
+  var docs = ['RG / CPF','Contrato Assinado','Atestado Medico','Foto Oficial'];
+  var statusMsg = docs.map(function(d,i){
+    var s = document.getElementById('novo-doc-status-'+i);
+    var status = s ? (s.textContent.includes('Entregue') ? 'Entregue' : 'Pendente') : 'Pendente';
+    return '• '+d+': '+status;
+  }).join('\n');
+  alert('Atleta "'+nome+'" registrado!\n\nDocumentos:\n'+statusMsg+'\n\nAgora adicione este atleta na aba Contratos do Google Sheets para aparecer no sistema.');
+  // Reset form and docs
+  novoDocLinks = {0:'',1:'',2:'',3:''};
+  [0,1,2,3].forEach(function(i){
+    var s=document.getElementById('novo-doc-status-'+i);
+    if(s){s.className='el-doc-status doc-pend';s.textContent='○ Pendente';}
+    var inf=document.getElementById('novo-doc-info-'+i);
+    if(inf) inf.style.display='none';
+  });
   document.getElementById('el-modal-bg').classList.remove('open');
 }
 document.addEventListener('DOMContentLoaded', function() {
