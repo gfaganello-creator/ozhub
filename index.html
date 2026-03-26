@@ -1108,8 +1108,9 @@ function abrirFicha(idx) {
   if(!r) return;
   var ini = (r['Nome Completo']||'?').charAt(0).toUpperCase();
   document.getElementById('ef-avatar').textContent = ini;
-  document.getElementById('ef-nome').textContent = r['Apelido']||r['Nome Completo']||'—';
-  document.getElementById('ef-pos').textContent = (r['Posicao']||r['Posição']||'—') + ' · ID ' + (r['ID']||'—');
+  document.getElementById('ef-nome').textContent = r['Nome Completo']||'—';
+  var apelido = r['Apelido'] ? ' · "' + r['Apelido'] + '"' : '';
+  document.getElementById('ef-pos').textContent = (r['Posicao']||r['Posição']||'—') + apelido + ' · ID ' + (r['ID']||'—');
   document.getElementById('ef-nomec').textContent = r['Nome Completo']||'—';
   document.getElementById('ef-apelido').textContent = r['Apelido']||'—';
   document.getElementById('ef-nasc').textContent = r['Data Nasc.']||'—';
@@ -1559,8 +1560,9 @@ function abrirFicha(idx) {
   if(!r) return;
   var ini = (r['Nome Completo']||'?').charAt(0).toUpperCase();
   document.getElementById('ef-avatar').textContent = ini;
-  document.getElementById('ef-nome').textContent = r['Apelido']||r['Nome Completo']||'—';
-  document.getElementById('ef-pos').textContent = (r['Posicao']||r['Posição']||'—') + ' · ID ' + (r['ID']||'—');
+  document.getElementById('ef-nome').textContent = r['Nome Completo']||'—';
+  var apelido = r['Apelido'] ? ' · "' + r['Apelido'] + '"' : '';
+  document.getElementById('ef-pos').textContent = (r['Posicao']||r['Posição']||'—') + apelido + ' · ID ' + (r['ID']||'—');
   document.getElementById('ef-nomec').textContent = r['Nome Completo']||'—';
   document.getElementById('ef-apelido').textContent = r['Apelido']||'—';
   document.getElementById('ef-nasc').textContent = r['Data Nasc.']||'—';
