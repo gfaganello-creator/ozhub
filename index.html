@@ -2646,21 +2646,25 @@ function renderSemanaAtual() {
     if(v==='Viagem') return '#f7a846';
     return 'var(--wh)';
   }
-  // Pega a programacao mais recente cujos dias batem com a semana
+  // Pega a programacao onde as datas dos dias batem com a semana inicio
   var semanaAtual = null;
-  // Ordena por data de atualizacao (coluna I) e pega a mais recente com dias reais
   var comDados = window._programacoes.filter(function(p) {
     if(!p['Dias'] || p['Dias'].length < 50) return false;
     try {
       var d = JSON.parse(p['Dias']);
-      // Verifica se Segunda tem data valida
-      return d['Segunda'] && d['Segunda'].data;
+      if(!d['Segunda'] || !d['Segunda'].data) return false;
+      var semRaw = p['Semana Inicio Raw'] || '';
+      var partsR = semRaw.split('-');
+      if(partsR.length !== 3) return false;
+      var dSeg = d['Segunda'].data;
+      var dSegParts = dSeg.split('/');
+      if(dSegParts.length !== 3) return false;
+      var dSegDate = new Date(parseInt(dSegParts[2]), parseInt(dSegParts[1])-1, parseInt(dSegParts[0]));
+      var dSemDate = new Date(parseInt(partsR[0]), parseInt(partsR[1])-1, parseInt(partsR[2]));
+      return Math.abs(dSegDate - dSemDate) < 8 * 86400000;
     } catch(e) { return false; }
   });
-  if(comDados.length) {
-    // Pega o mais recente por indice
-    semanaAtual = comDados[comDados.length - 1];
-  }
+  if(comDados.length) semanaAtual = comDados[comDados.length - 1];
   if(!semanaAtual) { panel.innerHTML = '<div style="color:var(--ts);font-size:12px">Nenhuma programação cadastrada.</div>'; return; }
   var dias = {};
   try { dias = JSON.parse(semanaAtual['Dias']||'{}'); } catch(e) {}
