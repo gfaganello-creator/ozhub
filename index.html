@@ -28,14 +28,14 @@ nav a:hover{color:var(--az);background:rgba(70,162,247,.08)}
 .bna:hover{background:#6ab8fa!important}
 
 /* STATUS BAR */
-.sbar{position:fixed;top:68px;left:0;right:0;z-index:99;background:rgba(12,26,40,.96);backdrop-filter:blur(8px);border-bottom:1px solid rgba(70,162,247,.07);padding:0 48px;display:flex;align-items:center;gap:28px;height:36px;font-size:11px}
+.sbar{position:fixed;top:68px;left:0;right:0;z-index:99;background:rgba(12,26,40,.96);backdrop-filter:blur(8px);border-bottom:1px solid rgba(70,162,247,.07);padding:0 48px;display:flex;align-items:center;gap:0;height:60px}
 .si{display:flex;align-items:center;gap:7px}
 .sd{width:6px;height:6px;border-radius:50%;animation:pulse 2s infinite}
 .sd.lv{background:var(--gr);box-shadow:0 0 6px var(--gr)}
 .sd.wn{background:var(--ye)}
 .sd.er{background:var(--re)}
 .sl{color:var(--ts);letter-spacing:1px;text-transform:uppercase;font-weight:700;font-size:9px}
-.sv{color:var(--wh);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px}
+.sv{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:24px;letter-spacing:0;line-height:1;color:var(--ww)}
 .sv.g{color:var(--gr)}.sv.y{color:var(--ye)}.sv.r{color:var(--re)}
 .sep{width:1px;height:16px;background:rgba(70,162,247,.1)}
 .ssync{margin-left:auto;font-size:10px;color:var(--ts);display:flex;align-items:center;gap:6px}
@@ -351,13 +351,10 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
 </header>
 
 <div class="sbar">
-  <div class="si"><div class="sd lv"></div><span class="sl">Disponibilidade</span><span class="sv g" id="st-disp">—</span></div>
-  <div class="sep"></div>
-  <div class="si"><div class="sd wn"></div><span class="sl">Em Rehab</span><span class="sv y" id="st-rehab">—</span></div>
-  <div class="sep"></div>
-  <div class="si"><div class="sd er"></div><span class="sl">Lesões Ativas</span><span class="sv r" id="st-les">—</span></div>
-  <div class="sep"></div>
-  <div class="si"><div class="sd lv"></div><span class="sl">Plantel Apto</span><span class="sv g" id="st-apto">—</span></div>
+  <div class="si"><div class="sd lv"></div><div class="si-body"><span class="sv g" id="st-disp">—</span><span class="sl">Disponibilidade</span></div></div>
+<div class="si"><div class="sd wn"></div><div class="si-body"><span class="sv y" id="st-rehab">—</span><span class="sl">Em Rehab</span></div></div>
+<div class="si"><div class="sd er"></div><div class="si-body"><span class="sv r" id="st-les">—</span><span class="sl">Lesões Ativas</span></div></div>
+<div class="si"><div class="sd lv"></div><div class="si-body"><span class="sv g" id="st-apto">—</span><span class="sl">Plantel Apto</span></div></div>to">—</span></div>
   <div class="ssync"><span class="spin">↻</span><span id="st-sync">Sincronizando...</span></div>
 </div>
 
