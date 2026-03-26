@@ -1092,6 +1092,49 @@ const GAMES={'2026-3':[29],'2026-4':[5,12]};
 const MN=['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
 let cur=new Date(2026,2,1);
 
+function getProgBadges(y, m, d) {
+  if(!window._programacoes || !window._programacoes.length) return '';
+  var dt = new Date(y, m, d);
+  var badges = '';
+  var diasNomes = ['Segunda','Terca','Quarta','Quinta','Sexta','Sabado','Domingo'];
+  var corMap = {
+    'Treino': '#2ecc8e',
+    'Jogo': '#46a2f7',
+    'Descanso Programado': '#8899aa',
+    'Folga': '#e74c3c',
+    'Viagem': '#f7a846'
+  };
+  var labelMap = {
+    'Treino': 'T',
+    'Jogo': 'J',
+    'Descanso Programado': 'D',
+    'Folga': 'F',
+    'Viagem': 'V'
+  };
+  window._programacoes.forEach(function(prog) {
+    var dias = {};
+    try { dias = JSON.parse(prog['Dias']||'{}'); } catch(e) {}
+    diasNomes.forEach(function(nome) {
+      var dia = dias[nome];
+      if(!dia || !dia.data) return;
+      // dia.data is like "16/03/2026"
+      var parts = dia.data.split('/');
+      if(parts.length !== 3) return;
+      var diaDate = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+      if(diaDate.getFullYear()===y && diaDate.getMonth()===m && diaDate.getDate()===d) {
+        // Show the "dominant" activity for the day
+        var atividade = dia.manha || dia.tarde || '';
+        if(!atividade || atividade === '-') return;
+        var cor = corMap[atividade] || '#8899aa';
+        var label = labelMap[atividade] || atividade[0];
+        badges += '<div style="width:100%;height:3px;background:'+cor+';border-radius:1px;margin-top:2px"></div>';
+        badges += '<div style="font-size:7px;color:'+cor+';font-weight:700;line-height:1">'+label+'</div>';
+      }
+    });
+  });
+  return badges;
+}
+
 function renderCal(){
   const y=cur.getFullYear(),m=cur.getMonth(),k=y+'-'+(m+1);
   const gm=GAMES[k]||[];
@@ -1105,7 +1148,12 @@ function renderCal(){
     const isGm=gm.includes(d);
     let c='cd2';
     if(isTd)c+=' td';else if(isGm)c+=' gm';
-    h+=`<div class="${c}">${d}${isGm&&!isTd?'<div class="dot"></div>':''}</div>`;
+    const progBadges = getProgBadges(y, m, d);
+    h+=`<div class="${c}" style="position:relative;display:flex;flex-direction:column;align-items:center;min-height:36px">`
+      + `<span>${d}</span>`
+      + (isGm&&!isTd?'<div class="dot"></div>':'')
+      + progBadges
+      + `</div>`;
   }
   setHtml('cal-d',h);
 }
@@ -2556,7 +2604,11 @@ function carregarProgramacoes() {
     }).catch(function(){});
 }
 
+// Global store for programações (for calendar integration)
+var _programacoes = [];
+
 function renderizarProgramacoes(rows) {
+  _programacoes = rows;
   var container = document.getElementById('prog-lista');
   if(!container) return;
   if(!rows.length) {
@@ -2566,19 +2618,29 @@ function renderizarProgramacoes(rows) {
   container.innerHTML = rows.map(function(r,i) {
     var dias = {};
     try { dias = JSON.parse(r['Dias']||'{}'); } catch(e){}
-    var treinos = Object.values(dias).filter(function(d){return d.manha==='Treino'||d.tarde==='Treino';}).length;
-    return '<div class="prog-card" onclick="verProg('+i+')" data-idx="'+i+'" data-raw=\''+JSON.stringify(r).replace(/'/g,"&#39;")+'\'>' +
+    var treinos = Object.values(dias).filter(function(d){return (d&&d.manha)==='Treino'||(d&&d.tarde)==='Treino';}).length;
+    // Get display date - try multiple columns
+    var semanaDisplay = r['Semana Inicio'] || r['Semana Inicio Raw'] || '-';
+    // If it's in YYYY-MM-DD format, convert to BR
+    if(semanaDisplay && semanaDisplay.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      var pts = semanaDisplay.split('-');
+      semanaDisplay = pts[2]+'/'+pts[1]+'/'+pts[0];
+    }
+    var safeR = JSON.stringify(r).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    return '<div class="prog-card" data-idx="'+i+'" data-raw=\''+JSON.stringify(r).replace(/'/g,"&#39;")+'\'>' +
       '<div style="display:flex;align-items:center;justify-content:space-between">' +
         '<div>' +
-          '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;color:var(--ww);letter-spacing:1px">Semana de '+(r['Semana Inicio']||'-')+'</div>' +
+          '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;color:var(--ww);letter-spacing:1px">Semana de '+semanaDisplay+'</div>' +
           '<div style="font-size:11px;color:var(--ts);margin-top:2px">'+(r['Local']||'-')+' &middot; '+treinos+' treinos na semana</div>' +
         '</div>' +
         '<div style="display:flex;gap:8px">' +
-          '<button class="ppf-edit-btn" onclick="event.stopPropagation();editarProg('+i+',\''+JSON.stringify(r).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;')+'\')" style="font-size:9px;padding:4px 10px">Editar</button>' +
+          '<button class="ppf-edit-btn" onclick="event.stopPropagation();editarProg('+i+',\''+safeR+'\')" style="font-size:9px;padding:4px 10px">Editar</button>' +
         '</div>' +
       '</div>' +
     '</div>';
   }).join('');
+  // Re-render calendar to show programação badges
+  renderCal();
 }
 
 function verProg(idx) {
