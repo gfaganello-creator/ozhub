@@ -331,6 +331,16 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
 .el-doc-hint{font-size:10px;color:var(--ts);margin-top:8px;font-style:italic}
 .doc-alert-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ye);margin-left:4px;vertical-align:middle}
 
+
+.el-doc-upload{display:none;margin-top:6px}
+.el-doc-item.active .el-doc-upload{display:flex;gap:6px;align-items:center}
+.el-doc-upload-btn{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:5px 10px;border-radius:3px;cursor:pointer;background:rgba(70,162,247,.15);color:var(--az);border:1px solid rgba(70,162,247,.3);transition:.2s}
+.el-doc-upload-btn:hover{background:rgba(70,162,247,.3)}
+.el-doc-link{font-size:10px;color:var(--az);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;display:inline-block}
+.el-doc-item{flex-direction:column;align-items:flex-start;gap:6px}
+.el-doc-item-row{display:flex;align-items:center;justify-content:space-between;width:100%}
+.el-doc-loading{font-size:10px;color:var(--ts);font-style:italic}
+
 </style>
 </head>
 <body>
@@ -939,60 +949,115 @@ function fecharFicha() {
 }
 
 
-var docTypes = ['RG / CPF', 'Contrato assinado', 'Atestado medico', 'Foto oficial'];
-var docStatus = {}; // key: athleteID_docIdx -> 'ok'|'pend'|'venc'
-
-function getDocKey(atletaId, docIdx) {
-  return 'doc_' + atletaId + '_' + docIdx;
-}
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyNgyTbvYTcX465s-ShnjxBDm9BJnsF4PnOliKTIgLidZ3GC48GOwR9Y_LXtmF-wtWu/exec';
+var docTypes2 = ['RG / CPF','Contrato Assinado','Atestado Medico','Foto Oficial'];
+var currentDocs = {};
+var currentAtletaId = null;
 
 function loadDocs(atletaId) {
-  docTypes.forEach(function(d, i) {
-    var key = getDocKey(atletaId, i);
-    var saved = localStorage.getItem(key);
-    docStatus[key] = saved || 'pend';
-  });
-}
-
-function saveDocs(atletaId) {
-  docTypes.forEach(function(d, i) {
-    var key = getDocKey(atletaId, i);
-    localStorage.setItem(key, docStatus[key]);
-  });
-}
-
-function toggleDoc(atletaId, docIdx) {
-  var key = getDocKey(atletaId, docIdx);
-  var current = docStatus[key] || 'pend';
-  var next = current === 'pend' ? 'ok' : current === 'ok' ? 'venc' : 'pend';
-  docStatus[key] = next;
-  saveDocs(atletaId);
-  renderDocs(atletaId);
+  currentAtletaId = atletaId;
+  var el = document.getElementById('ef-docs');
+  if(el) el.innerHTML = '<div class="el-doc-loading">Carregando documentos...</div>';
+  fetch(SCRIPT_URL + '?action=getDocs&atletaId=' + atletaId)
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if(data.success) {
+        currentDocs = data.docs;
+      } else {
+        currentDocs = {};
+      }
+      renderDocs(atletaId);
+    })
+    .catch(function() {
+      currentDocs = {};
+      renderDocs(atletaId);
+    });
 }
 
 function renderDocs(atletaId) {
-  var html = docTypes.map(function(d, i) {
-    var key = getDocKey(atletaId, i);
-    var s = docStatus[key] || 'pend';
-    var cls = s === 'ok' ? 'doc-ok' : s === 'venc' ? 'doc-venc' : 'doc-pend';
-    var label = s === 'ok' ? '&#10003; Entregue' : s === 'venc' ? '&#9888; Vencido' : '&#9711; Pendente';
-    return '<div class="el-doc-item" onclick="toggleDoc(\'' + atletaId + '\',' + i + ')">' +
-      '<span class="el-doc-label">' + d + '</span>' +
-      '<span class="el-doc-status ' + cls + '">' + label + '</span>' +
-      '</div>';
+  var html = docTypes2.map(function(d, i) {
+    var info = currentDocs[d] || {status:'Pendente', link:''};
+    var s = info.status || 'Pendente';
+    var cls = s==='Entregue' ? 'doc-ok' : s==='Vencido' ? 'doc-venc' : 'doc-pend';
+    var label = s==='Entregue' ? '&#10003; Entregue' : s==='Vencido' ? '&#9888; Vencido' : '&#9711; Pendente';
+    var linkHtml = info.link ? '<a class="el-doc-link" href="'+info.link+'" target="_blank">&#128279; Ver arquivo</a>' : '';
+    return '<div class="el-doc-item" id="doc-item-'+i+'">' +
+      '<div class="el-doc-item-row">' +
+        '<span class="el-doc-label">'+d+'</span>' +
+        '<div style="display:flex;gap:6px;align-items:center">' +
+          (linkHtml ? linkHtml : '') +
+          '<span class="el-doc-status '+cls+'" style="cursor:pointer" onclick="cycleDocStatus(''+atletaId+'',''+d+'','+i+')">'+label+'</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="el-doc-upload" id="doc-upload-'+i+'">' +
+        '<input type="file" id="doc-file-'+i+'" style="display:none" onchange="uploadDoc(''+atletaId+'',''+d+'','+i+')">' +
+        '<button class="el-doc-upload-btn" onclick="document.getElementById('doc-file-'+i+'').click()">&#8593; Anexar arquivo</button>' +
+        '<span class="el-doc-loading" id="doc-prog-'+i+'"></span>' +
+      '</div>' +
+    '</div>';
   }).join('');
   var el = document.getElementById('ef-docs');
   if(el) el.innerHTML = html;
 }
 
+function cycleDocStatus(atletaId, docType, idx) {
+  var info = currentDocs[docType] || {status:'Pendente',link:''};
+  var current = info.status || 'Pendente';
+  var next = current==='Pendente' ? 'Entregue' : current==='Entregue' ? 'Vencido' : 'Pendente';
+  currentDocs[docType] = {status:next, link:info.link||''};
+  // Show upload area if Entregue
+  var uploadEl = document.getElementById('doc-upload-'+idx);
+  if(uploadEl) uploadEl.style.display = next==='Entregue' ? 'flex' : 'none';
+  // Save to Sheets
+  fetch(SCRIPT_URL, {
+    method:'POST',
+    body: JSON.stringify({action:'updateDocStatus', atletaId:atletaId, docType:docType, status:next})
+  }).catch(function(){});
+  renderDocs(atletaId);
+}
+
+function uploadDoc(atletaId, docType, idx) {
+  var fileInput = document.getElementById('doc-file-'+idx);
+  var file = fileInput.files[0];
+  if(!file) return;
+  var progEl = document.getElementById('doc-prog-'+idx);
+  if(progEl) progEl.textContent = 'Enviando...';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result.split(',')[1];
+    var atletaNome = document.getElementById('ef-nomec').textContent || 'Atleta';
+    fetch(SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify({
+        action:'uploadDoc',
+        atletaId: atletaId,
+        atletaNome: atletaNome,
+        docType: docType,
+        fileName: file.name,
+        fileData: base64,
+        mimeType: file.type
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if(data.success) {
+        currentDocs[docType] = {status:'Entregue', link:data.link};
+        if(progEl) progEl.textContent = 'Enviado!';
+        setTimeout(function(){ if(progEl) progEl.textContent=''; }, 3000);
+        renderDocs(atletaId);
+      } else {
+        if(progEl) progEl.textContent = 'Erro ao enviar.';
+      }
+    })
+    .catch(function() {
+      if(progEl) progEl.textContent = 'Erro de conexao.';
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
 function getDocSummary(atletaId) {
-  var pendentes = 0;
-  docTypes.forEach(function(d, i) {
-    var key = getDocKey(atletaId, i);
-    var s = localStorage.getItem(key) || 'pend';
-    if(s !== 'ok') pendentes++;
-  });
-  return pendentes;
+  return 0; // Will be updated after load
 }
 
 function elFiltrar() { elMostrar(); }
