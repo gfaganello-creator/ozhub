@@ -1280,16 +1280,81 @@ function fecharStatus() {
 function confirmarStatus(novoStatus) {
   var r = atletaEditando;
   if(!r) return;
+  var needsExtra = novoStatus==='Empréstimo (Entrada)' || novoStatus==='Cedido';
+  if(needsExtra) {
+    // Show extra fields
+    var extraDiv = document.getElementById('el-status-extra');
+    var extraTitle = document.getElementById('el-status-extra-title');
+    var clubeLabel = document.getElementById('el-status-clube-label');
+    var opts = document.querySelectorAll('.el-status-opt');
+    opts.forEach(function(o){ o.style.display='none'; });
+    extraDiv.style.display = 'block';
+    if(novoStatus==='Cedido') {
+      extraTitle.textContent = 'Dados da Cessão';
+      clubeLabel.textContent = 'Clube de Destino';
+    } else {
+      extraTitle.textContent = 'Dados do Empréstimo';
+      clubeLabel.textContent = 'Clube de Origem';
+    }
+    // Show confirm button
+    var conf = document.getElementById('el-status-confirmar');
+    if(!conf) {
+      conf = document.createElement('button');
+      conf.id = 'el-status-confirmar';
+      conf.className = 'el-btn el-btn-primary';
+      conf.style.cssText = 'width:100%;margin-top:8px';
+      conf.textContent = 'Confirmar';
+      extraDiv.parentNode.appendChild(conf);
+    }
+    conf.style.display = 'block';
+    conf.onclick = function() { salvarStatusComExtra(novoStatus); };
+    return;
+  }
+  enviarStatus(r['ID'], {statusContrato: novoStatus});
+}
+
+function salvarStatusComExtra(novoStatus) {
+  var r = atletaEditando;
+  if(!r) return;
+  var clube = document.getElementById('el-status-clube').value.trim();
+  var inicio = document.getElementById('el-status-inicio').value;
+  var fim = document.getElementById('el-status-fim').value;
+  function toSD(d) { if(!d) return ''; var p=d.split('-'); return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:''; }
+  enviarStatus(r['ID'], {
+    statusContrato: novoStatus,
+    tipoContrato: novoStatus,
+    clube: clube,
+    empInicio: toSD(inicio),
+    empFim: toSD(fim)
+  });
+}
+
+function enviarStatus(atletaId, dados) {
+  dados.action = 'updateAtleta';
+  dados.atletaId = atletaId;
   fecharStatus();
-  // Use no-cors POST — fire and forget
   fetch(SCRIPT_URL2, {
     method:'POST',
     mode:'no-cors',
-    body: JSON.stringify({action:'updateAtleta', atletaId:r['ID'], statusContrato:novoStatus})
+    body: JSON.stringify(dados)
   }).catch(function(){});
-  // Update UI optimistically
   fecharFicha();
-  setTimeout(function(){ elCarregar(); }, 1500);
+  // Reset modal
+  setTimeout(function(){
+    var opts = document.querySelectorAll('.el-status-opt');
+    opts.forEach(function(o){ o.style.display=''; });
+    var extra = document.getElementById('el-status-extra');
+    if(extra) extra.style.display='none';
+    var conf = document.getElementById('el-status-confirmar');
+    if(conf) conf.style.display='none';
+    var cl = document.getElementById('el-status-clube');
+    if(cl) cl.value='';
+    var si = document.getElementById('el-status-inicio');
+    if(si) si.value='';
+    var sf = document.getElementById('el-status-fim');
+    if(sf) sf.value='';
+    elCarregar();
+  }, 1500);
 }
 
 function rescindirAtleta() {
