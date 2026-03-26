@@ -620,15 +620,26 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
   </div>
 
   <!-- Programacao Semanal -->
-  <div style="margin-top:40px">
-    <div class="prog-section-header">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Programacoes Semanais</div>
-      <button class="prog-new-btn" onclick="abrirNovaProgamacao()">+ Nova Programacao</button>
+  <div style="margin-top:40px;display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+
+    <!-- Painel de detalhes do dia selecionado -->
+    <div id="cal-day-panel" style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:4px;padding:24px;min-height:200px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--ts);margin-bottom:16px">Programação do Dia</div>
+      <div id="cal-day-content" style="color:var(--ts);font-size:13px">Clique em um dia no calendário para ver as atividades.</div>
     </div>
-    <div id="prog-lista">
-      <div style="color:var(--ts);font-size:13px;padding:20px 0">Carregando programacoes...</div>
+
+    <!-- Semana atual resumo + botao nova -->
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--ts)">Semana Atual</div>
+        <button class="prog-new-btn" onclick="abrirNovaProgamacao()">+ Nova Programacao</button>
+      </div>
+      <div id="cal-semana-atual" style="color:var(--ts);font-size:13px">Carregando...</div>
     </div>
+
   </div>
+  <!-- Lista oculta mas ainda carregada para o calendário -->
+  <div id="prog-lista" style="display:none"></div>
 </section>
 
 <section id="relatorio">
@@ -1151,7 +1162,7 @@ function renderCal(){
     let c='cd2';
     if(isTd)c+=' td';else if(isGm)c+=' gm';
     const progBadges = getProgBadges(y, m, d);
-    h+=`<div class="${c}" style="position:relative;display:flex;flex-direction:column;align-items:center;min-height:36px">`
+    h+=`<div class="${c}" style="position:relative;display:flex;flex-direction:column;align-items:center;min-height:36px;cursor:pointer" onclick="mostrarDiaProg(${y},${m},${d})">`
       + `<span>${d}</span>`
       + (isGm&&!isTd?'<div class="dot"></div>':'')
       + progBadges
@@ -2565,6 +2576,114 @@ function voltarProgForm() {
   document.getElementById('prog-modal-bg').classList.add('open');
 }
 
+
+function mostrarDiaProg(y, m, d) {
+  var panel = document.getElementById('cal-day-content');
+  if(!panel) return;
+  var dd = String(d).padStart(2,'0');
+  var mm = String(m+1).padStart(2,'0');
+  var dataStr = dd+'/'+mm+'/'+y;
+  var diasNomes = ['Segunda','Terca','Quarta','Quinta','Sexta','Sabado','Domingo'];
+  var diasPT = ['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado','Domingo'];
+  function corAtiv(v) {
+    if(!v||v==='-'||v==='') return 'var(--ts)';
+    if(v==='Treino Campo'||v==='Treino Academia'||v==='Treino') return 'var(--gr)';
+    if(v==='Folga') return 'var(--re)';
+    if(v==='Jogo') return 'var(--az)';
+    if(v==='Viagem') return '#f7a846';
+    return 'var(--wh)';
+  }
+  // Procura nos dados de programacao
+  var found = false;
+  if(window._programacoes && window._programacoes.length) {
+    window._programacoes.forEach(function(prog) {
+      var dias = {};
+      try { dias = JSON.parse(prog['Dias']||'{}'); } catch(e) {}
+      diasNomes.forEach(function(nome, i) {
+        var dia = dias[nome];
+        if(dia && dia.data === dataStr) {
+          found = true;
+          var manha = dia.manha || '—';
+          var tarde = dia.tarde || '—';
+          panel.innerHTML =
+            '<div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--ww);margin-bottom:16px">'+ dataStr +' · '+ diasPT[i] +'</div>'+
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
+              '<div style="background:var(--c1);border-radius:3px;padding:14px">'+
+                '<div style="font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">Manhã · '+(prog['Horario Manha']||'08:00')+'</div>'+
+                '<div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:'+corAtiv(manha)+'">'+manha+'</div>'+
+              '</div>'+
+              '<div style="background:var(--c1);border-radius:3px;padding:14px">'+
+                '<div style="font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">Tarde · '+(prog['Horario Tarde']||'13:30')+'</div>'+
+                '<div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:'+corAtiv(tarde)+'">'+tarde+'</div>'+
+              '</div>'+
+            '</div>'+
+            '<div style="margin-top:12px;font-size:11px;color:var(--ts)">📍 '+(prog['Local']||'Jose Liberatti')+'</div>';
+        }
+      });
+    });
+  }
+  if(!found) {
+    panel.innerHTML = '<div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--ww);margin-bottom:8px">'+ dataStr +'</div>'+
+      '<div style="font-size:12px;color:var(--ts)">Sem programação para este dia.</div>';
+  }
+}
+
+function renderSemanaAtual() {
+  var panel = document.getElementById('cal-semana-atual');
+  if(!panel || !window._programacoes || !window._programacoes.length) return;
+  var hoje = new Date();
+  var diasNomes = ['Segunda','Terca','Quarta','Quinta','Sexta','Sabado','Domingo'];
+  var diasPT = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  function corAtiv(v) {
+    if(!v||v==='-'||v==='') return 'var(--ts)';
+    if(v==='Treino Campo'||v==='Treino Academia'||v==='Treino') return 'var(--gr)';
+    if(v==='Folga') return 'var(--re)';
+    if(v==='Jogo') return 'var(--az)';
+    if(v==='Viagem') return '#f7a846';
+    return 'var(--wh)';
+  }
+  // Pega a programacao da semana atual
+  var semanaAtual = null;
+  window._programacoes.forEach(function(prog) {
+    var dias = {};
+    try { dias = JSON.parse(prog['Dias']||'{}'); } catch(e) {}
+    diasNomes.forEach(function(nome) {
+      var dia = dias[nome];
+      if(!dia || !dia.data) return;
+      var parts = dia.data.split('/');
+      if(parts.length !== 3) return;
+      var d = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+      var diff = Math.abs(d - hoje);
+      if(diff < 7 * 24 * 60 * 60 * 1000) semanaAtual = prog;
+    });
+  });
+  if(!semanaAtual) {
+    // Mostra a mais recente
+    var validas = window._programacoes.filter(function(p) { return p['Dias'] && p['Dias'] !== '{}' && p['Dias'].length > 5; });
+    if(validas.length) semanaAtual = validas[validas.length-1];
+  }
+  if(!semanaAtual) { panel.innerHTML = '<div style="color:var(--ts);font-size:12px">Nenhuma programação cadastrada.</div>'; return; }
+  var dias = {};
+  try { dias = JSON.parse(semanaAtual['Dias']||'{}'); } catch(e) {}
+  var rows = diasNomes.map(function(nome, i) {
+    var dia = dias[nome] || {};
+    var manha = dia.manha || '—';
+    var tarde = dia.tarde || '—';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(70,162,247,.06)">'+
+      '<div style="width:32px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--ts)">'+diasPT[i]+'</div>'+
+      '<div style="font-size:11px;color:var(--ts);width:60px">'+(dia.data||'')+'</div>'+
+      '<div style="flex:1;font-size:11px;color:'+corAtiv(manha)+'">'+manha+'</div>'+
+      '<div style="flex:1;font-size:11px;color:'+corAtiv(tarde)+'">'+tarde+'</div>'+
+    '</div>';
+  }).join('');
+  var treinos = Object.values(dias).filter(function(d){
+    return d&&(d.manha==='Treino Campo'||d.manha==='Treino Academia'||d.tarde==='Treino Campo'||d.tarde==='Treino Academia');
+  }).length;
+  panel.innerHTML =
+    '<div style="font-size:10px;color:var(--ts);margin-bottom:4px">'+semanaAtual['Semana Inicio']+'  ·  '+treinos+' treinos</div>'+
+    rows;
+}
+
 var _confirmando = false;
 function confirmarProg() {
   if(_confirmando) return;
@@ -2631,6 +2750,7 @@ function renderizarProgramacoes(rows) {
   _programacoes = rows;
   // Atualiza calendario com badges de treino
   if(typeof renderCal === 'function') renderCal();
+  if(typeof renderSemanaAtual === 'function') renderSemanaAtual();
   var container = document.getElementById('prog-lista');
   if(!container) return;
   if(!rows.length) {
