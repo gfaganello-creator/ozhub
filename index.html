@@ -2564,8 +2564,11 @@ function voltarProgForm() {
 }
 
 function confirmarProg() {
-  var data = _progDataPendente;
-  if(!data) { alert('Erro: dados da programacao perdidos. Tente novamente.'); return; }
+  console.log('confirmarProg chamado!');
+  var data = _progDataPendente || getProgData();
+  console.log('data:', data);
+  if(!data) { alert('Informe os dados da programacao.'); return; }
+  _progDataPendente = null;
   var isEdit = progModo==='editar';
 
   // POST no-cors (dispara e esquece — Apps Script processa mesmo sem resposta)
