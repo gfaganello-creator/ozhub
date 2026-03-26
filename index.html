@@ -1098,14 +1098,16 @@ function getProgBadges(y, m, d) {
   var badges = '';
   var diasNomes = ['Segunda','Terca','Quarta','Quinta','Sexta','Sabado','Domingo'];
   var corMap = {
-    'Treino': '#2ecc8e',
+    'Treino Campo': '#2ecc8e',
+    'Treino Academia': '#1a9e6a',
     'Jogo': '#46a2f7',
     'Descanso Programado': '#8899aa',
     'Folga': '#e74c3c',
     'Viagem': '#f7a846'
   };
   var labelMap = {
-    'Treino': 'T',
+    'Treino Campo': 'TC',
+    'Treino Academia': 'TA',
     'Jogo': 'J',
     'Descanso Programado': 'D',
     'Folga': 'F',
@@ -2339,11 +2341,11 @@ function salvarFisica(){
           <div class="prog-dia-label">Segunda</div>
           <div class="prog-turno-label">Manha</div>
           <select class="prog-select" id="prog-manha-Segunda">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
           <div class="prog-turno-label">Tarde</div>
           <select class="prog-select" id="prog-tarde-Segunda">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
         </div>
         <!-- Terca -->
@@ -2351,11 +2353,11 @@ function salvarFisica(){
           <div class="prog-dia-label">Terca</div>
           <div class="prog-turno-label">Manha</div>
           <select class="prog-select" id="prog-manha-Terca">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
           <div class="prog-turno-label">Tarde</div>
           <select class="prog-select" id="prog-tarde-Terca">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
         </div>
         <!-- Quarta -->
@@ -2363,11 +2365,11 @@ function salvarFisica(){
           <div class="prog-dia-label">Quarta</div>
           <div class="prog-turno-label">Manha</div>
           <select class="prog-select" id="prog-manha-Quarta">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
           <div class="prog-turno-label">Tarde</div>
           <select class="prog-select" id="prog-tarde-Quarta">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
         </div>
         <!-- Quinta -->
@@ -2375,11 +2377,11 @@ function salvarFisica(){
           <div class="prog-dia-label">Quinta</div>
           <div class="prog-turno-label">Manha</div>
           <select class="prog-select" id="prog-manha-Quinta">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
           <div class="prog-turno-label">Tarde</div>
           <select class="prog-select" id="prog-tarde-Quinta">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
         </div>
         <!-- Sexta -->
@@ -2387,11 +2389,11 @@ function salvarFisica(){
           <div class="prog-dia-label">Sexta</div>
           <div class="prog-turno-label">Manha</div>
           <select class="prog-select" id="prog-manha-Sexta">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
           <div class="prog-turno-label">Tarde</div>
           <select class="prog-select" id="prog-tarde-Sexta">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
         </div>
         <!-- Sabado -->
@@ -2399,11 +2401,11 @@ function salvarFisica(){
           <div class="prog-dia-label">Sabado</div>
           <div class="prog-turno-label">Manha</div>
           <select class="prog-select" id="prog-manha-Sabado">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
           <div class="prog-turno-label">Tarde</div>
           <select class="prog-select" id="prog-tarde-Sabado">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
         </div>
         <!-- Domingo -->
@@ -2411,11 +2413,11 @@ function salvarFisica(){
           <div class="prog-dia-label">Domingo</div>
           <div class="prog-turno-label">Manha</div>
           <select class="prog-select" id="prog-manha-Domingo">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
           <div class="prog-turno-label">Tarde</div>
           <select class="prog-select" id="prog-tarde-Domingo">
-            <option>Treino</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
+            <option>Treino Campo</option><option>Treino Academia</option><option>Descanso Programado</option><option>Folga</option><option>Jogo</option><option>Viagem</option>
           </select>
         </div>
       </div>
@@ -2618,7 +2620,7 @@ function renderizarProgramacoes(rows) {
   container.innerHTML = rows.map(function(r,i) {
     var dias = {};
     try { dias = JSON.parse(r['Dias']||'{}'); } catch(e){}
-    var treinos = Object.values(dias).filter(function(d){return (d&&d.manha)==='Treino'||(d&&d.tarde)==='Treino';}).length;
+    var treinos = Object.values(dias).filter(function(d){return (d&&(d.manha==='Treino Campo'||d.manha==='Treino Academia'||d.tarde==='Treino Campo'||d.tarde==='Treino Academia'));}).length;
     // Get display date - try multiple columns
     var semanaDisplay = r['Semana Inicio'] || r['Semana Inicio Raw'] || '-';
     // If it's in YYYY-MM-DD format, convert to BR
@@ -2664,7 +2666,7 @@ function editarProg(idx, rawStr) {
       var m = document.getElementById('prog-manha-'+d);
       var t = document.getElementById('prog-tarde-'+d);
       if(dias[d]) {
-        if(m) m.value = dias[d].manha||'Treino';
+        if(m) m.value = dias[d].manha||'Treino Campo';
         if(t) t.value = dias[d].tarde||'Descanso Programado';
       }
     });
