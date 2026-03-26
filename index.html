@@ -2570,11 +2570,13 @@ function voltarProgForm() {
   document.getElementById('prog-modal-bg').classList.add('open');
 }
 
+var _confirmando = false;
 function confirmarProg() {
-  console.log('confirmarProg chamado!');
+  if(_confirmando) return;
+  _confirmando = true;
+  setTimeout(function(){ _confirmando = false; }, 3000);
   var data = _progDataPendente || getProgData();
-  console.log('data:', data);
-  if(!data) { alert('Informe os dados da programacao.'); return; }
+  if(!data) { _confirmando = false; alert('Informe os dados da programacao.'); return; }
   _progDataPendente = null;
   var isEdit = progModo==='editar';
 
@@ -2708,6 +2710,7 @@ function editarProg(idx, rawStr) {
 
 
 function mostrarSucesso(isEdit, pdfLink, data) {
+  console.trace('mostrarSucesso chamado de:');
   var hubUrl = 'https://gfaganello-creator.github.io/ozhub/';
   var diasVals = data ? Object.values(data.dias) : [];
   var semana = diasVals.length >= 7
