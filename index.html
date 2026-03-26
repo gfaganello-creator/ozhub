@@ -873,7 +873,6 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
         <div style="margin-top:8px" id="ef-badge"></div>
       <div class="el-ficha-actions">
         <button class="btn-editar" onclick="abrirEdicao()">✏️ Editar</button>
-        <button class="btn-status" onclick="alterarStatus()">🔄 Status</button>
         <button class="btn-rescindir" onclick="rescindirAtleta()">✖ Rescindir</button>
       </div>
       </div>
@@ -1193,6 +1192,12 @@ function abrirEdicao() {
   for(var i=0;i<statusEl.options.length;i++){if(statusEl.options[i].value===status){statusEl.selectedIndex=i;break;}}
   document.getElementById('edit-resp').value = r['Registrado por']||'';
   document.getElementById('edit-obs').value = r['Observações']||r['Observacoes']||'';
+  // Populate status extra fields
+  document.getElementById('edit-status-clube').value = r['Clube']||'';
+  function toInputDate2(d) { if(!d) return ''; var p=d.split('/'); return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:''; }
+  document.getElementById('edit-status-inicio').value = toInputDate2(r['Início Empréstimo']||r['Inicio Emprestimo']||'');
+  document.getElementById('edit-status-fim').value = toInputDate2(r['Fim Empréstimo']||r['Fim Emprestimo']||'');
+  toggleEditStatusFields();
   document.getElementById('el-edit-bg').classList.add('open');
 }
 
@@ -1228,7 +1233,10 @@ function salvarEdicao() {
       tipoContrato: document.getElementById('edit-tipo').value,
       statusContrato: document.getElementById('edit-status').value,
       registradoPor: document.getElementById('edit-resp').value,
-      observacoes: document.getElementById('edit-obs').value
+      observacoes: document.getElementById('edit-obs').value,
+      clube: document.getElementById('edit-status-clube').value,
+      empInicio: toSheetDate(document.getElementById('edit-status-inicio').value),
+      empFim: toSheetDate(document.getElementById('edit-status-fim').value)
     })
   })
   .then(function(){
@@ -1252,6 +1260,25 @@ function alterarStatus() {
   var sub = document.getElementById('status-sub');
   if(sub) sub.textContent = (r['Apelido']||r['Nome Completo']) + ' · Status atual: ' + (r['Status Contrato']||'—');
   document.getElementById('el-status-bg').classList.add('open');
+}
+
+
+function toggleEditStatusFields() {
+  var status = document.getElementById('edit-status').value;
+  var extraDiv = document.getElementById('edit-status-extra');
+  var title = document.getElementById('edit-status-extra-title');
+  var clubeLabel = document.getElementById('edit-status-clube-label');
+  var needsExtra = status==='Empréstimo (Entrada)' || status==='Cedido';
+  extraDiv.style.display = needsExtra ? 'block' : 'none';
+  if(needsExtra) {
+    if(status==='Cedido') {
+      title.textContent = 'Dados da Cessão';
+      clubeLabel.textContent = 'Clube de Destino';
+    } else {
+      title.textContent = 'Dados do Empréstimo';
+      clubeLabel.textContent = 'Clube de Origem';
+    }
+  }
 }
 
 function toggleEmpFields(prefix) {
@@ -1978,7 +2005,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
       </div>
       <div class="el-form-group"><label class="el-label">Status Contrato</label>
-        <select class="el-input" id="edit-status">
+        <select class="el-input" id="edit-status" onchange="toggleEditStatusFields()">
           <option>Ativo</option>
           <option>Empréstimo (Entrada)</option>
           <option>Cedido</option>
@@ -1987,6 +2014,16 @@ document.addEventListener('DOMContentLoaded', function() {
         </select>
       </div>
       <div class="el-form-group"><label class="el-label">Registrado por</label><input class="el-input" id="edit-resp"></div>
+      <div class="el-form-group full" id="edit-status-extra" style="display:none">
+        <div style="background:rgba(70,162,247,.04);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:16px">
+          <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--az);margin-bottom:10px" id="edit-status-extra-title">Dados do Empréstimo</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="el-form-group full"><label class="el-label" id="edit-status-clube-label">Clube de Origem</label><input class="el-input" id="edit-status-clube" placeholder="Ex: São Paulo FC"></div>
+            <div class="el-form-group"><label class="el-label">Início</label><input class="el-input" id="edit-status-inicio" type="date"></div>
+            <div class="el-form-group"><label class="el-label">Fim</label><input class="el-input" id="edit-status-fim" type="date"></div>
+          </div>
+        </div>
+      </div>
       <div class="el-form-group full"><label class="el-label">Observações</label><input class="el-input" id="edit-obs"></div>
     </div>
     <div class="el-modal-footer">
