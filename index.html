@@ -377,6 +377,43 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
 .el-emp-fields-title{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--az);margin-bottom:12px}
 .el-emp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
+
+#plantel-perf{display:none;padding:100px clamp(24px,5vw,64px) 48px;background:var(--c1);min-height:100vh}
+.pp-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,4vw,42px);color:var(--ww);letter-spacing:2px;margin-bottom:4px}
+.pp-sub{font-size:12px;color:var(--ts);letter-spacing:1px;margin-bottom:24px}
+.pp-search{background:rgba(15,25,35,.7);border:1px solid rgba(70,162,247,.15);border-radius:4px;padding:10px 16px;color:var(--wh);font-size:13px;width:280px;outline:none;margin-bottom:20px}
+.pp-search::placeholder{color:var(--ts)}.pp-search:focus{border-color:rgba(70,162,247,.4)}
+.pp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.pp-card{background:rgba(15,25,35,.7);border:1px solid rgba(70,162,247,.1);border-radius:8px;padding:18px 20px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:14px}
+.pp-card:hover{border-color:rgba(70,162,247,.4);transform:translateY(-2px)}
+.pp-avatar{width:48px;height:48px;border-radius:50%;background:rgba(70,162,247,.15);border:2px solid rgba(70,162,247,.25);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--az);flex-shrink:0}
+.pp-card-info{flex:1;min-width:0}
+.pp-card-name{font-size:13px;font-weight:700;color:var(--wh);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp-card-pos{font-size:11px;color:var(--ts);margin-top:2px}
+.pp-card-status{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 8px;border-radius:2px;flex-shrink:0}
+.pp-card-status.ok{background:rgba(46,204,142,.15);color:var(--gr);border:1px solid rgba(46,204,142,.25)}
+.pp-card-status.rehab{background:rgba(231,76,60,.15);color:var(--re);border:1px solid rgba(231,76,60,.25)}
+.pp-card-status.warn{background:rgba(241,196,15,.15);color:var(--ye);border:1px solid rgba(241,196,15,.25)}
+.ppf-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;align-items:center;justify-content:center;padding:20px}
+.ppf-bg.open{display:flex}
+.ppf-modal{background:rgba(8,16,26,.98);border:1px solid rgba(70,162,247,.2);border-radius:10px;width:100%;max-width:720px;max-height:92vh;overflow-y:auto}
+.ppf-top{background:linear-gradient(135deg,rgba(70,162,247,.1) 0%,rgba(7,14,22,.8) 100%);padding:24px 28px;border-bottom:1px solid rgba(70,162,247,.1);display:flex;align-items:center;gap:16px}
+.ppf-avatar{width:56px;height:56px;border-radius:50%;background:rgba(70,162,247,.15);border:2px solid rgba(70,162,247,.3);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--az);flex-shrink:0}
+.ppf-name{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--ww);letter-spacing:1px;line-height:1}
+.ppf-pos{font-size:11px;color:var(--ts);margin-top:3px}
+.ppf-body{padding:20px 28px}
+.ppf-section{margin-bottom:20px}
+.ppf-section-title{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(70,162,247,.08)}
+.ppf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ppf-field{display:flex;flex-direction:column;gap:3px}
+.ppf-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts)}
+.ppf-val{font-size:13px;color:var(--wh);font-weight:500}
+.ppf-edit-btn{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:3px;cursor:pointer;background:rgba(70,162,247,.12);color:var(--az);border:1px solid rgba(70,162,247,.3);transition:.2s}
+.ppf-close{background:none;border:none;color:var(--ts);cursor:pointer;font-size:18px;padding:4px}
+.ppf-lesao-item{background:rgba(231,76,60,.06);border:1px solid rgba(231,76,60,.15);border-radius:5px;padding:10px 14px;margin-bottom:6px}
+.ppf-lesao-nome{font-size:12px;font-weight:600;color:var(--wh)}
+.ppf-lesao-det{font-size:11px;color:var(--ts);margin-top:2px}
+
 </style>
 </head>
 <body>
@@ -2018,5 +2055,171 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 
+
+<section id="plantel-perf">
+  <div class="pp-title">PLANTEL</div>
+  <div class="pp-sub">Osasco Sporting &middot; Elenco ativo &middot; Nucleo de Performance</div>
+  <input class="pp-search" id="pp-search" placeholder="Buscar atleta..." oninput="ppFiltrar()">
+  <div class="pp-grid" id="pp-grid"><div style="color:var(--ts);font-size:13px">Carregando...</div></div>
+</section>
+
+<div class="ppf-bg" id="ppf-bg" onclick="if(event.target===this)fecharFichaPerf()">
+  <div class="ppf-modal">
+    <div class="ppf-top">
+      <div class="ppf-avatar" id="ppf-avatar">?</div>
+      <div style="flex:1"><div class="ppf-name" id="ppf-name">-</div><div class="ppf-pos" id="ppf-pos">-</div><div style="margin-top:6px" id="ppf-status-badge"></div></div>
+      <button class="ppf-edit-btn" onclick="abrirEdicaoFisica()">Editar Dados</button>
+      <button class="ppf-close" onclick="fecharFichaPerf()" style="margin-left:8px">&#10005;</button>
+    </div>
+    <div class="ppf-body">
+      <div class="ppf-section"><div class="ppf-section-title">Dados Fisicos</div>
+        <div class="ppf-grid">
+          <div class="ppf-field"><div class="ppf-label">Altura</div><div class="ppf-val" id="ppf-altura">-</div></div>
+          <div class="ppf-field"><div class="ppf-label">Peso</div><div class="ppf-val" id="ppf-peso">-</div></div>
+          <div class="ppf-field"><div class="ppf-label">Pe Dominante</div><div class="ppf-val" id="ppf-pe">-</div></div>
+          <div class="ppf-field"><div class="ppf-label">Data Nasc.</div><div class="ppf-val" id="ppf-nasc">-</div></div>
+          <div class="ppf-field"><div class="ppf-label">Naturalidade</div><div class="ppf-val" id="ppf-natural">-</div></div>
+          <div class="ppf-field"><div class="ppf-label">Contato Emerg.</div><div class="ppf-val" id="ppf-contato">-</div></div>
+        </div>
+      </div>
+      <div class="ppf-section"><div class="ppf-section-title">Composicao Corporal</div>
+        <div class="ppf-grid">
+          <div class="ppf-field"><div class="ppf-label">% Gordura</div><div class="ppf-val" id="ppf-gordura">-</div></div>
+          <div class="ppf-field"><div class="ppf-label">Massa Magra</div><div class="ppf-val" id="ppf-magra">-</div></div>
+          <div class="ppf-field"><div class="ppf-label">IMC</div><div class="ppf-val" id="ppf-imc">-</div></div>
+        </div>
+      </div>
+      <div class="ppf-section"><div class="ppf-section-title">Historico de Lesoes</div>
+        <div id="ppf-lesoes"><div style="color:var(--ts);font-size:12px">Sem lesoes registradas</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="el-edit-bg" id="ppf-edit-bg" onclick="if(event.target===this)fecharEdicaoFisica()">
+  <div class="el-edit-modal">
+    <div class="el-edit-title" id="ppf-edit-title">DADOS FISICOS</div>
+    <div class="el-form-grid">
+      <div class="el-form-group"><label class="el-label">Altura (cm)</label><input class="el-input" id="ppf-f-altura" type="number" placeholder="178"></div>
+      <div class="el-form-group"><label class="el-label">Peso (kg)</label><input class="el-input" id="ppf-f-peso" type="number" placeholder="75"></div>
+      <div class="el-form-group"><label class="el-label">Pe Dominante</label><select class="el-input" id="ppf-f-pe"><option value="">Selecione...</option><option>Direito</option><option>Esquerdo</option><option>Ambidestro</option></select></div>
+      <div class="el-form-group"><label class="el-label">Contato Emergencia</label><input class="el-input" id="ppf-f-contato" placeholder="(11) 99999-0000"></div>
+      <div class="el-form-group"><label class="el-label">% Gordura</label><input class="el-input" id="ppf-f-gordura" type="number" step="0.1"></div>
+      <div class="el-form-group"><label class="el-label">Massa Magra (kg)</label><input class="el-input" id="ppf-f-magra" type="number" step="0.1"></div>
+      <div class="el-form-group"><label class="el-label">Status</label><select class="el-input" id="ppf-f-status"><option>Disponivel</option><option>Rehab</option><option>Suspenso</option></select></div>
+      <div class="el-form-group full"><label class="el-label">Historico Lesoes</label><input class="el-input" id="ppf-f-historico" placeholder="Ex: Lesao muscular isquiotibiais (jan/2026)"></div>
+    </div>
+    <div class="el-modal-footer">
+      <button class="el-btn el-btn-secondary" onclick="fecharEdicaoFisica()">Cancelar</button>
+      <button class="el-btn el-btn-primary" onclick="salvarFisica()">Salvar</button>
+    </div>
+  </div>
+</div>
+<script>
+var ppDados=[], ppAtletaAtual=null, ppLesoes=[];
+function abrirPlantelPerf(e){
+  if(e) e.preventDefault();
+  var el=document.getElementById("plantel-perf");
+  el.style.display="block";
+  setTimeout(function(){el.scrollIntoView({behavior:"smooth"});},100);
+  ppCarregar();
+}
+async function ppCarregar(){
+  try{
+    var SID="1Fj8RhuKjicvVyF06CPJqF7kiKpEsquCKFSHX3qf3Pus";
+    var BASE="https://docs.google.com/spreadsheets/d/"+SID+"/gviz/tq?tqx=out:csv&sheet=";
+    var PLANTEL_SHEET="\uD83D\uDC65 Plantel";
+    var LESOES_SHEET="\uD83C\uDFE5 Les\u00f5es";
+    var r1=await fetch(BASE+encodeURIComponent(PLANTEL_SHEET));
+    var r2=await fetch(BASE+encodeURIComponent(LESOES_SHEET));
+    var t1=await r1.text(), t2=await r2.text();
+    function pcsv(line){var r=[],c="",q=false;for(var i=0;i<line.length;i++){var ch=line[i];if(ch==='"'){q=!q;}else if(ch===","&&!q){r.push(c.trim());c="";}else{c+=ch;}}r.push(c.trim());return r;}
+    function psheet(txt){var ls=txt.split("\n");var hs=pcsv(ls[0]).map(function(h){return h.replace(/^"|"$/g,"").trim();});return ls.slice(1).filter(function(l){return l.trim();}).map(function(l){var vs=pcsv(l);var o={};hs.forEach(function(h,i){o[h]=(vs[i]||"").replace(/^"|"$/g,"").trim();});return o;});}
+    ppDados=psheet(t1); ppLesoes=psheet(t2);
+    ppRenderizar();
+  }catch(ex){
+    document.getElementById("pp-grid").innerHTML="<div style='color:var(--re);font-size:12px'>Erro ao carregar plantel.</div>";
+  }
+}
+function ppRenderizar(){
+  var busca=(document.getElementById("pp-search").value||"").toLowerCase();
+  var dados=ppDados.filter(function(r){return !busca||(r["Nome Completo"]||"").toLowerCase().includes(busca)||(r["Apelido"]||"").toLowerCase().includes(busca);});
+  if(!dados.length){document.getElementById("pp-grid").innerHTML="<div style='color:var(--ts);font-size:13px'>Nenhum atleta.</div>";return;}
+  document.getElementById("pp-grid").innerHTML=dados.map(function(r){
+    var ini=(r["Nome Completo"]||"?").charAt(0).toUpperCase();
+    var st=r["Status"]||"Disponivel";
+    var sc=st.toLowerCase().includes("disp")?"ok":st.toLowerCase().includes("rehab")?"rehab":"warn";
+    var oi=ppDados.indexOf(r);
+    return "<div class='pp-card' onclick='abrirFichaPerf("+oi+")'>"
+      +"<div class='pp-avatar'>"+ini+"</div>"
+      +"<div class='pp-card-info'><div class='pp-card-name'>"+(r["Nome Completo"]||"-")+"</div>"
+      +"<div class='pp-card-pos'>"+(r["Posi\u00e7\u00e3o"]||r["Posicao"]||"-")+" &middot; #"+(r["N\u00ba Camisa"]||r["N Camisa"]||"-")+"</div></div>"
+      +"<span class='pp-card-status "+sc+"'>"+st+"</span></div>";
+  }).join("");
+}
+function ppFiltrar(){ppRenderizar();}
+function abrirFichaPerf(idx){
+  var r=ppDados[idx]; if(!r) return;
+  ppAtletaAtual=r;
+  document.getElementById("ppf-avatar").textContent=(r["Nome Completo"]||"?").charAt(0).toUpperCase();
+  document.getElementById("ppf-name").textContent=r["Nome Completo"]||"-";
+  document.getElementById("ppf-pos").textContent=(r["Posi\u00e7\u00e3o"]||r["Posicao"]||"-")+(r["Apelido"]?" - "+r["Apelido"]:"");
+  var st=r["Status"]||"Disponivel";
+  var sc=st.toLowerCase().includes("disp")?"ativo":st.toLowerCase().includes("rehab")?"rescindido":"emprestimo";
+  document.getElementById("ppf-status-badge").innerHTML="<span class='el-badge "+sc+"'>"+st+"</span>";
+  document.getElementById("ppf-altura").textContent=r["Altura (cm)"]?r["Altura (cm)"]+" cm":"-";
+  document.getElementById("ppf-peso").textContent=r["Peso Inicial (kg)"]?r["Peso Inicial (kg)"]+" kg":"-";
+  document.getElementById("ppf-pe").textContent=r["P\u00e9 Dominante"]||r["Pe Dominante"]||"-";
+  document.getElementById("ppf-nasc").textContent=r["Data Nasc."]||"-";
+  document.getElementById("ppf-natural").textContent=r["Naturalidade"]||"-";
+  document.getElementById("ppf-contato").textContent=r["Contato Emerg\u00eancia"]||r["Contato Emergencia"]||"-";
+  document.getElementById("ppf-gordura").textContent=r["% Gordura"]?r["% Gordura"]+"%":"-";
+  document.getElementById("ppf-magra").textContent=r["Massa Magra"]?r["Massa Magra"]+" kg":"-";
+  var h=parseFloat(r["Altura (cm)"]),p=parseFloat(r["Peso Inicial (kg)"]);
+  document.getElementById("ppf-imc").textContent=(h&&p)?((p/((h/100)*(h/100))).toFixed(1)):"-";
+  var nome=r["Apelido"]||r["Nome Completo"]||"";
+  var les=ppLesoes.filter(function(l){return (l["Atleta"]||"")===nome;});
+  document.getElementById("ppf-lesoes").innerHTML=les.length?les.map(function(l){
+    return "<div class='ppf-lesao-item'><div class='ppf-lesao-nome'>"+(l["Tipo Les\u00e3o"]||"-")+" - "+(l["Localiza\u00e7\u00e3o"]||"-")+"</div>"
+      +"<div class='ppf-lesao-det'>"+(l["Data Ocorr\u00eancia"]||"-")+" - "+(l["Gravidade"]||"-")+" - "+(l["Dias Afastado (Est.)"]||"-")+" dias</div></div>";
+  }).join(""):"<div style='color:var(--ts);font-size:12px'>Sem lesoes registradas</div>";
+  document.getElementById("ppf-bg").classList.add("open");
+}
+function fecharFichaPerf(){document.getElementById("ppf-bg").classList.remove("open");}
+function abrirEdicaoFisica(){
+  var r=ppAtletaAtual; if(!r) return;
+  document.getElementById("ppf-edit-title").textContent="DADOS FISICOS - "+(r["Apelido"]||r["Nome Completo"]||"").toUpperCase();
+  document.getElementById("ppf-f-altura").value=r["Altura (cm)"]||"";
+  document.getElementById("ppf-f-peso").value=r["Peso Inicial (kg)"]||"";
+  document.getElementById("ppf-f-contato").value=r["Contato Emerg\u00eancia"]||r["Contato Emergencia"]||"";
+  document.getElementById("ppf-f-gordura").value=r["% Gordura"]||"";
+  document.getElementById("ppf-f-magra").value=r["Massa Magra"]||"";
+  document.getElementById("ppf-f-historico").value=r["Hist\u00f3rico Les\u00e3o"]||r["Historico Lesao"]||"";
+  var peEl=document.getElementById("ppf-f-pe"); var pe=r["P\u00e9 Dominante"]||"";
+  for(var i=0;i<peEl.options.length;i++){if(peEl.options[i].value===pe){peEl.selectedIndex=i;break;}}
+  var stEl=document.getElementById("ppf-f-status"); var st=r["Status"]||"";
+  for(var i=0;i<stEl.options.length;i++){if(stEl.options[i].value===st||stEl.options[i].textContent===st){stEl.selectedIndex=i;break;}}
+  document.getElementById("ppf-edit-bg").classList.add("open");
+}
+function fecharEdicaoFisica(){document.getElementById("ppf-edit-bg").classList.remove("open");}
+function salvarFisica(){
+  var r=ppAtletaAtual; if(!r) return;
+  fetch(SCRIPT_URL2,{method:"POST",mode:"no-cors",body:JSON.stringify({
+    action:"updatePlantel",atletaId:r["ID"],
+    altura:document.getElementById("ppf-f-altura").value,
+    peso:document.getElementById("ppf-f-peso").value,
+    peDominante:document.getElementById("ppf-f-pe").value,
+    contato:document.getElementById("ppf-f-contato").value,
+    gordura:document.getElementById("ppf-f-gordura").value,
+    massaMagra:document.getElementById("ppf-f-magra").value,
+    status:document.getElementById("ppf-f-status").value,
+    historico:document.getElementById("ppf-f-historico").value
+  })}).catch(function(){});
+  fecharEdicaoFisica(); fecharFichaPerf();
+  setTimeout(function(){ppCarregar();},1500);
+  alert("Dados fisicos salvos!");
+}
+
+</script>
 </body>
 </html>
