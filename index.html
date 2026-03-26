@@ -608,16 +608,17 @@ async function sync(){
     fetchCSV('\ud83d\udc65 Plantel')
   ]);
 
-  // DISPONIBILIDADE
-  if(dispData&&dispData.length>0){
-    const total=dispData.length;
-    const sim=dispData.filter(r=>r['% Disponível?']==='Sim'||r['% Disponível?']==='TRUE').length;
-    if(total>0){
-      const pct=Math.round((sim/total)*100);
-      setHtml('st-disp',pct+'%');
-      setHtml('kv-disp',pct+'<span class="ku">%</span>');
-      setHtml('h-disp',pct+'<span class="u">%</span>');
-    }
+  // DISPONIBILIDADE — baseado no Status do Plantel
+  if(plantelData&&plantelData.length>0){
+    const total=plantelData.length;
+    const disponiveis=plantelData.filter(r=>{
+      const s=(r['Status']||r['status']||'').toLowerCase();
+      return s==='' || s==='disponível' || s==='disponivel' || s==='apto';
+    }).length;
+    const pct=total>0?Math.round((disponiveis/total)*100):0;
+    setHtml('st-disp',pct+'%');
+    setHtml('kv-disp',pct+'<span class="ku">%</span>');
+    setHtml('h-disp',pct+'<span class="u">%</span>');
   }
 
   // LESÕES
