@@ -2584,36 +2584,19 @@ function confirmarProg() {
     });
   }
   var progId = (progModo === 'editar' && progAtual) ? (progAtual.ID||progAtual.id||'') : gerarUUID();
-  // Envia via hidden form — garante chegada no Apps Script sem CORS
-  var iframe = document.getElementById('_hidden_iframe');
-  if (!iframe) {
-    iframe = document.createElement('iframe');
-    iframe.id = '_hidden_iframe';
-    iframe.name = '_hidden_iframe';
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-  }
-  var form = document.createElement('form');
-  form.method = 'POST';
-  form.action = SCRIPT_URL2;
-  form.target = '_hidden_iframe';
-  form.style.display = 'none';
-  var fields = {
+  // Envia via fetch — Apps Script processa mesmo com erro CORS
+  var gp = new URLSearchParams({
     action: 'saveProgamacao', modo: progModo, progId: progId,
     local: data.local, horManha: data.horManha, horTarde: data.horTarde,
     obs: data.obs, semanaInicio: data.inicio,
     dias: JSON.stringify(data.dias),
     email: 'gfaganello@osascosporting.com.br',
     isEdit: isEdit ? 'true' : 'false'
-  };
-  Object.keys(fields).forEach(function(k) {
-    var inp = document.createElement('input');
-    inp.type = 'hidden'; inp.name = k; inp.value = fields[k];
-    form.appendChild(inp);
   });
-  document.body.appendChild(form);
-  form.submit();
-  setTimeout(function() { document.body.removeChild(form); }, 3000);
+  // Usa fetch GET — Apps Script doGet processa normalmente
+  fetch(SCRIPT_URL2 + '?' + gp.toString())
+    .then(function(r){ return r.json(); })
+    .catch(function(){});
 
   // Link para a pagina da programacao — mostra a mais recente
   var progLink = 'https://gfaganello-creator.github.io/ozhub/prog.html';
