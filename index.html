@@ -2446,7 +2446,7 @@ function salvarFisica(){
       <div id="prog-preview-content"></div>
       <div style="background:rgba(70,162,247,.06);border:1px solid rgba(70,162,247,.15);border-radius:6px;padding:14px;margin-top:16px">
         <div style="font-size:11px;font-weight:700;color:var(--az);margin-bottom:6px">Email sera enviado para:</div>
-        <div style="font-size:12px;color:var(--ts)" id="prog-email-lista">gfaganello@osascosporting.com.br</div>
+        <div style="font-size:12px;color:var(--ts)" id="prog-email-lista"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="95f2f3f4f2f4fbf0f9f9fad5fae6f4e6f6fae6e5fae7e1fcfbf2bbf6faf8bbf7e7">[email&#160;protected]</a></div>
       </div>
       <div class="el-modal-footer" style="margin-top:20px">
         <button class="el-btn el-btn-secondary" onclick="voltarProgForm()">Voltar e Editar</button>
@@ -2456,7 +2456,7 @@ function salvarFisica(){
   </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ══════════════════════════════════════
 // PROGRAMAÇÃO SEMANAL
 // ══════════════════════════════════════
@@ -2678,7 +2678,7 @@ function editarProg(idx, rawStr) {
 <script>
 
 function mostrarSucesso(isEdit, pdfLink, data) {
-  var hubUrl = 'https://gfaganello-criador.github.io/ozhub/';
+  var hubUrl = 'https://gfaganello-creator.github.io/ozhub/';
   var semana = data ? (Object.values(data.dias)[0].data + ' a ' + Object.values(data.dias)[6].data) : '';
   // Count treinos
   var treinos = data ? Object.values(data.dias).filter(function(d){
@@ -2756,14 +2756,4 @@ confirmarProg = function() {
     // Even on CORS error, Apps Script likely ran - show success after delay
     if(btn) { btn.textContent = 'Confirmar e Enviar'; btn.disabled = false; }
     // Try no-cors fallback to ensure execution
-    fetch(SCRIPT_URL2 + '?' + params.toString(), {method:'GET', mode:'no-cors'}).catch(function(){});
-    setTimeout(function() {
-      mostrarSucesso(isEdit, '', data);
-      carregarProgramacoes();
-    }, 2000);
-  });
-};
-
-</script>
-</body>
-</html>
+    fe
