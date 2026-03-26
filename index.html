@@ -1844,6 +1844,26 @@ document.addEventListener('DOMContentLoaded', function() {
         <div><div class="el-status-opt-label">Rescindido</div><div class="el-status-opt-desc">Contrato encerrado — vai para o Histórico</div></div>
       </div>
     </div>
+    <!-- Extra fields for Empréstimo/Cedido -->
+    <div id="el-status-extra" style="display:none;margin-top:12px;background:rgba(70,162,247,.04);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:14px">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--az);margin-bottom:10px" id="el-status-extra-title">Dados do Empréstimo</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div>
+          <label style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);display:block;margin-bottom:4px" id="el-status-clube-label">Clube de Origem</label>
+          <input class="el-input" id="el-status-clube" placeholder="Ex: São Paulo FC" style="width:100%;box-sizing:border-box">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <label style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);display:block;margin-bottom:4px">Início</label>
+            <input class="el-input" id="el-status-inicio" type="date" style="width:100%;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);display:block;margin-bottom:4px">Fim</label>
+            <input class="el-input" id="el-status-fim" type="date" style="width:100%;box-sizing:border-box">
+          </div>
+        </div>
+      </div>
+    </div>
     <button class="el-status-cancel" onclick="fecharStatus()">Cancelar</button>
   </div>
 </div>
