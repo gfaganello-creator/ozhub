@@ -345,6 +345,7 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
 </head>
 <body>
 
+
 <header>
   <div class="hb">
     <div class="hl">
@@ -630,140 +631,8 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
   <a href="https://www.appsheet.com/start/87146c38-edf1-4b3b-8442-8269d8a3e79c" target="_blank" class="bp" style="font-size:12px;padding:10px 20px">Abrir App de Registro →</a>
 </footer>
 
-<script>
-// ══════════════════════════════════════════
-// GOOGLE SHEETS — TEMPO REAL
-// ══════════════════════════════════════════
-const SID='1Fj8RhuKjicvVyF06CPJqF7kiKpEsquCKFSHX3qf3Pus';
-const CSV=`https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=out:csv&sheet=`;
 
-function parseCSV(t){
-  const ls=t.split('\n'),heads=ls[0].split(',').map(h=>h.replace(/"/g,'').trim());
-  return ls.slice(1).filter(l=>l.trim()).map(l=>{
-    const v=[],obj={};let q=false,c='';
-    for(const ch of l){if(ch==='"'){q=!q}else if(ch===','&&!q){v.push(c.trim());c=''}else{c+=ch}}
-    v.push(c.trim());
-    heads.forEach((h,i)=>obj[h]=v[i]||'');
-    return obj;
-  });
-}
 
-async function fetchCSV(sh){
-  try{
-    const r=await fetch(CSV+encodeURIComponent(sh));
-    if(!r.ok)throw new Error(r.status);
-    return parseCSV(await r.text());
-  }catch(e){console.warn('Sheet err:',sh,e.message);return null}
-}
-
-function set(id,v){const el=document.getElementById(id);if(el)el.textContent=v}
-function setHtml(id,v){const el=document.getElementById(id);if(el)el.innerHTML=v}
-
-async function sync(){
-  set('st-sync','Sincronizando...');
-  
-  const [dispData,lesData,plantelData]=await Promise.all([
-    fetchCSV('✅ Disponibilidade'),
-    fetchCSV('🏥 Lesões'),
-    fetchCSV('👥 Plantel')
-  ]);
-
-  // DISPONIBILIDADE
-  if(dispData&&dispData.length>0){
-    const total=dispData.length;
-    const disponiveis2=plantelData?plantelData.filter(r=>{const s=(r['Status']||'').toLowerCase();return s===''||s.includes('disp');}).length:0; const pct2=plantelData&&plantelData.length>0?Math.round((disponiveis2/plantelData.length)*100):0; setHtml('st-disp',pct2+'%');setHtml('kv-disp',pct2+'<span class="ku">%</span>');setHtml('h-disp',pct2+'<span class="u">%</span>'); const sim=0;
-    if(total>0){
-      const pct=Math.round((sim/total)*100);
-      setHtml('st-disp',pct+'%');
-      setHtml('kv-disp',pct+'<span class="ku">%</span>');
-      setHtml('h-disp',pct+'<span class="u">%</span>');
-    }
-  }
-
-  // LESÕES
-  if(lesData&&lesData.length>0){
-    const total=lesData.length;
-    set('kv-les',total);set('h-les',total);set('st-les',total);
-    set('donut-n',total);
-    const musc=lesData.filter(r=>r['Tipo Lesão']&&r['Tipo Lesão'].toLowerCase().includes('muscul')).length;
-    set('d-musc',musc);
-    if(total>0)set('kv-les-sub',Math.round((musc/total)*100)+'% musculares');
-    const diasTotal=lesData.reduce((s,r)=>s+(parseInt(r['Dias Afastado (Est.)'])||0),0);
-    set('kv-dias',diasTotal);
-    
-    // REHAB
-    const rehab=lesData.filter(r=>!r['Data Retorno Real']||r['Data Retorno Real']==='');
-    set('st-rehab',rehab.length);
-    if(rehab.length>0){
-      set('rehab-sub',rehab.length+' atleta(s) · atualizado agora');
-      const rows=rehab.slice(0,5).map(r=>{
-        const d=parseInt(r['Dias Afastado (Est.)'])||0;
-        const cls=d>30?'c':'a';
-        const badge=d>30?'<span class="ba br">Rehab</span>':'<span class="ba bt">Transição</span>';
-        const nome=r['Atleta']||r['Nome Completo']||'—';
-        const les=r['Localização']||r['Tipo Lesão']||'—';
-        return `<div class="rrow"><div class="rn">${nome}</div><div class="rl">${les}</div><div class="rd ${cls}">${d}</div><div>${badge}</div></div>`;
-      }).join('');
-      setHtml('rehab-tbl','<div class="rh"><div class="rth">Atleta</div><div class="rth">Lesão</div><div class="rth">Dias</div><div class="rth">Status</div></div>'+rows);
-    }
-  }
-
-  // PLANTEL
-  if(plantelData&&lesData){
-    const rehab=lesData?lesData.filter(r=>!r['Data Retorno Real']||r['Data Retorno Real']==='').length:0;
-    const aptos=Math.max(0,plantelData.length-rehab);
-    set('st-apto',aptos);
-  }
-
-  // TIMESTAMP
-  const ts=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  set('st-sync','Atualizado '+ts);
-  set('dash-ts','Sincronizado via Google Sheets · '+ts);
-}
-
-sync().catch(e=>console.warn('sync error:',e));
-setInterval(()=>sync().catch(console.warn),5*60*1000);
-
-// ══════════════════════════════════════════
-// CALENDÁRIO
-// ══════════════════════════════════════════
-const GAMES={'2026-3':[29],'2026-4':[5,12]};
-const MN=['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
-let cur=new Date(2026,2,1);
-
-function renderCal(){
-  const y=cur.getFullYear(),m=cur.getMonth(),k=y+'-'+(m+1);
-  const gm=GAMES[k]||[];
-  set('cal-t',MN[m]+' '+y);
-  const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
-  const td=new Date();
-  let h='';
-  for(let i=0;i<first;i++)h+='<div class="cd2"></div>';
-  for(let d=1;d<=days;d++){
-    const isTd=td.getDate()===d&&td.getMonth()===m&&td.getFullYear()===y;
-    const isGm=gm.includes(d);
-    let c='cd2';
-    if(isTd)c+=' td';else if(isGm)c+=' gm';
-    h+=`<div class="${c}">${d}${isGm&&!isTd?'<div class="dot"></div>':''}</div>`;
-  }
-  setHtml('cal-d',h);
-}
-
-function chm(d){cur.setMonth(cur.getMonth()+d);renderCal();}
-renderCal();
-
-// ══════════════════════════════════════════
-// SCROLL REVEAL
-// ══════════════════════════════════════════
-document.querySelectorAll('.rv').forEach(el=>{
-  new IntersectionObserver(([e])=>{if(e.isIntersecting)el.classList.add('in');},{threshold:.08}).observe(el);
-});
-
-// SMOOTH SCROLL
-document.querySelectorAll('a[href^="#"]').forEach(a=>{
-  a.addEventListener('click',e=>{e.preventDefault();document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth',block:'start'});});
-});
-</script>
 
 <div id="tela-hub">
   <div class="hbg"></div><div class="hgr"></div>
@@ -864,24 +733,221 @@ document.querySelectorAll('a[href^="#"]').forEach(a=>{
   </div>
 </div>
 
+
+
+
+<div class="el-ficha-bg" id="el-ficha-bg" onclick="if(event.target===this)fecharFicha()">
+  <div class="el-ficha">
+    <div class="el-ficha-top">
+      <div class="el-ficha-avatar" id="ef-avatar">?</div>
+      <div class="el-ficha-info">
+        <div class="el-ficha-name" id="ef-nome">—</div>
+        <div class="el-ficha-pos" id="ef-pos">—</div>
+        <div style="margin-top:8px" id="ef-badge"></div>
+      </div>
+      <div>
+        <div class="el-ficha-camisa" id="ef-camisa">#</div>
+      </div>
+      <button class="el-ficha-close" onclick="fecharFicha()">&#10005;</button>
+    </div>
+    <div class="el-ficha-body">
+      <div class="el-ficha-section">
+        <div class="el-ficha-section-title">Dados Pessoais</div>
+        <div class="el-ficha-grid">
+          <div class="el-ficha-field"><div class="el-ficha-field-label">Nome Completo</div><div class="el-ficha-field-val" id="ef-nomec">—</div></div>
+          <div class="el-ficha-field"><div class="el-ficha-field-label">Apelido</div><div class="el-ficha-field-val" id="ef-apelido">—</div></div>
+          <div class="el-ficha-field"><div class="el-ficha-field-label">Data de Nascimento</div><div class="el-ficha-field-val" id="ef-nasc">—</div></div>
+          <div class="el-ficha-field"><div class="el-ficha-field-label">Naturalidade</div><div class="el-ficha-field-val" id="ef-natural">—</div></div>
+        </div>
+      </div>
+      <div class="el-ficha-section">
+        <div class="el-ficha-section-title">Contrato</div>
+        <div class="el-ficha-contrato">
+          <div class="el-ficha-contrato-info">
+            <div class="el-ficha-contrato-tipo" id="ef-tipo">—</div>
+            <div class="el-ficha-contrato-datas" id="ef-datas">—</div>
+          </div>
+          <div>
+            <div class="el-ficha-dias" id="ef-dias">—</div>
+            <div class="el-ficha-dias-label">dias restantes</div>
+          </div>
+        </div>
+      </div>
+      <div class="el-ficha-section">
+        <div class="el-ficha-section-title">Documentacao</div>
+        <div class="el-docs-grid" id="ef-docs"></div>
+        <div class="el-doc-hint">Clique no status para alternar. Os dados sao salvos localmente.</div>
+      </div>
+      <div class="el-ficha-section">
+        <div class="el-ficha-section-title">Informacoes Adicionais</div>
+        <div class="el-ficha-grid">
+          <div class="el-ficha-field"><div class="el-ficha-field-label">Registrado por</div><div class="el-ficha-field-val" id="ef-resp">—</div></div>
+          <div class="el-ficha-field"><div class="el-ficha-field-label">Status</div><div class="el-ficha-field-val" id="ef-status">—</div></div>
+          <div class="el-ficha-field" style="grid-column:1/-1"><div class="el-ficha-field-label">Observacoes</div><div class="el-ficha-field-val" id="ef-obs" style="color:var(--ts)">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <script>
+
+// ══════════════════════════════════════════
+// GOOGLE SHEETS — TEMPO REAL
+// ══════════════════════════════════════════
+const SID='1Fj8RhuKjicvVyF06CPJqF7kiKpEsquCKFSHX3qf3Pus';
+const CSV=`https://docs.google.com/spreadsheets/d/${SID}/gviz/tq?tqx=out:csv&sheet=`;
+
+function parseCSV(t){
+  const ls=t.split('\n'),heads=ls[0].split(',').map(h=>h.replace(/"/g,'').trim());
+  return ls.slice(1).filter(l=>l.trim()).map(l=>{
+    const v=[],obj={};let q=false,c='';
+    for(const ch of l){if(ch==='"'){q=!q}else if(ch===','&&!q){v.push(c.trim());c=''}else{c+=ch}}
+    v.push(c.trim());
+    heads.forEach((h,i)=>obj[h]=v[i]||'');
+    return obj;
+  });
+}
+
+async function fetchCSV(sh){
+  try{
+    const r=await fetch(CSV+encodeURIComponent(sh));
+    if(!r.ok)throw new Error(r.status);
+    return parseCSV(await r.text());
+  }catch(e){console.warn('Sheet err:',sh,e.message);return null}
+}
+
+function set(id,v){const el=document.getElementById(id);if(el)el.textContent=v}
+function setHtml(id,v){const el=document.getElementById(id);if(el)el.innerHTML=v}
+
+async function sync(){
+  set('st-sync','Sincronizando...');
+  
+  const [dispData,lesData,plantelData]=await Promise.all([
+    fetchCSV('✅ Disponibilidade'),
+    fetchCSV('🏥 Lesões'),
+    fetchCSV('👥 Plantel')
+  ]);
+
+  // DISPONIBILIDADE — baseado no Status do Plantel
+  if(plantelData&&plantelData.length>0){
+    var totalPlantel=plantelData.length;
+    var dispCount=plantelData.filter(function(r){var st=(r['Status']||'').toLowerCase();return st===''||st.includes('disp');}).length;
+    var pctDisp=Math.round((dispCount/totalPlantel)*100);
+    setHtml('st-disp',pctDisp+'%');
+    setHtml('kv-disp',pctDisp+'<span class="ku">%</span>');
+    setHtml('h-disp',pctDisp+'<span class="u">%</span>');
+  }
+
+  // LESÕES
+  if(lesData&&lesData.length>0){
+    const total=lesData.length;
+    set('kv-les',total);set('h-les',total);set('st-les',total);
+    set('donut-n',total);
+    const musc=lesData.filter(r=>r['Tipo Lesão']&&r['Tipo Lesão'].toLowerCase().includes('muscul')).length;
+    set('d-musc',musc);
+    if(total>0)set('kv-les-sub',Math.round((musc/total)*100)+'% musculares');
+    const diasTotal=lesData.reduce((s,r)=>s+(parseInt(r['Dias Afastado (Est.)'])||0),0);
+    set('kv-dias',diasTotal);
+    
+    // REHAB
+    const rehab=lesData.filter(r=>!r['Data Retorno Real']||r['Data Retorno Real']==='');
+    set('st-rehab',rehab.length);
+    if(rehab.length>0){
+      set('rehab-sub',rehab.length+' atleta(s) · atualizado agora');
+      const rows=rehab.slice(0,5).map(r=>{
+        const d=parseInt(r['Dias Afastado (Est.)'])||0;
+        const cls=d>30?'c':'a';
+        const badge=d>30?'<span class="ba br">Rehab</span>':'<span class="ba bt">Transição</span>';
+        const nome=r['Atleta']||r['Nome Completo']||'—';
+        const les=r['Localização']||r['Tipo Lesão']||'—';
+        return `<div class="rrow"><div class="rn">${nome}</div><div class="rl">${les}</div><div class="rd ${cls}">${d}</div><div>${badge}</div></div>`;
+      }).join('');
+      setHtml('rehab-tbl','<div class="rh"><div class="rth">Atleta</div><div class="rth">Lesão</div><div class="rth">Dias</div><div class="rth">Status</div></div>'+rows);
+    }
+  }
+
+  // PLANTEL
+  if(plantelData&&lesData){
+    const rehab=lesData?lesData.filter(r=>!r['Data Retorno Real']||r['Data Retorno Real']==='').length:0;
+    const aptos=Math.max(0,plantelData.length-rehab);
+    set('st-apto',aptos);
+  }
+
+  // TIMESTAMP
+  const ts=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  set('st-sync','Atualizado '+ts);
+  set('dash-ts','Sincronizado via Google Sheets · '+ts);
+}
+
+sync().catch(e=>console.warn('sync error:',e));
+setInterval(()=>sync().catch(console.warn),5*60*1000);
+
+// ══════════════════════════════════════════
+// CALENDÁRIO
+// ══════════════════════════════════════════
+const GAMES={'2026-3':[29],'2026-4':[5,12]};
+const MN=['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+let cur=new Date(2026,2,1);
+
+function renderCal(){
+  const y=cur.getFullYear(),m=cur.getMonth(),k=y+'-'+(m+1);
+  const gm=GAMES[k]||[];
+  set('cal-t',MN[m]+' '+y);
+  const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+  const td=new Date();
+  let h='';
+  for(let i=0;i<first;i++)h+='<div class="cd2"></div>';
+  for(let d=1;d<=days;d++){
+    const isTd=td.getDate()===d&&td.getMonth()===m&&td.getFullYear()===y;
+    const isGm=gm.includes(d);
+    let c='cd2';
+    if(isTd)c+=' td';else if(isGm)c+=' gm';
+    h+=`<div class="${c}">${d}${isGm&&!isTd?'<div class="dot"></div>':''}</div>`;
+  }
+  setHtml('cal-d',h);
+}
+
+function chm(d){cur.setMonth(cur.getMonth()+d);renderCal();}
+renderCal();
+
+// ══════════════════════════════════════════
+// SCROLL REVEAL
+// ══════════════════════════════════════════
+document.querySelectorAll('.rv').forEach(el=>{
+  new IntersectionObserver(([e])=>{if(e.isIntersecting)el.classList.add('in');},{threshold:.08}).observe(el);
+});
+
+// SMOOTH SCROLL
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{e.preventDefault();document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth',block:'start'});});
+});
+
+</script>
+<script>
+
 function hidePerformance() {
-  var ids = ['dashboard','calendario','relatorio'];
-  ids.forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
+  ['dashboard','calendario','relatorio'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.style.display='none';
+  });
   var h=document.querySelector('header'); if(h) h.style.display='none';
   var s=document.querySelector('.sbar'); if(s) s.style.display='none';
   var f=document.querySelector('footer'); if(f) f.style.display='none';
 }
 function showPerformance() {
-  var ids = ['dashboard','calendario','relatorio'];
-  ids.forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display=''; });
+  ['dashboard','calendario','relatorio'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.style.display='';
+  });
   var h=document.querySelector('header'); if(h) h.style.display='';
   var s=document.querySelector('.sbar'); if(s) s.style.display='flex';
   var f=document.querySelector('footer'); if(f) f.style.display='';
 }
 function hubPerformance() {
   document.getElementById('tela-hub').style.display = 'none';
+  document.getElementById('mod-elenco').style.display = 'none';
   showPerformance();
+  window.scrollTo(0,0);
 }
 function hubElenco() {
   document.getElementById('tela-hub').style.display = 'none';
@@ -898,6 +964,218 @@ function hubVoltar() {
 }
 var elDados2 = [];
 var elFiltro2 = 'ativo';
+function elTab(filtro, el) {
+  elFiltro2 = filtro;
+  document.querySelectorAll('.el-tab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  elMostrar();
+}
+
+function abrirFicha(idx) {
+  var r = elDados2[idx];
+  if(!r) return;
+  var ini = (r['Nome Completo']||'?').charAt(0).toUpperCase();
+  document.getElementById('ef-avatar').textContent = ini;
+  document.getElementById('ef-nome').textContent = r['Apelido']||r['Nome Completo']||'—';
+  document.getElementById('ef-pos').textContent = (r['Posicao']||r['Posição']||'—') + ' · ID ' + (r['ID']||'—');
+  document.getElementById('ef-nomec').textContent = r['Nome Completo']||'—';
+  document.getElementById('ef-apelido').textContent = r['Apelido']||'—';
+  document.getElementById('ef-nasc').textContent = r['Data Nasc.']||'—';
+  document.getElementById('ef-natural').textContent = r['Naturalidade']||'—';
+  document.getElementById('ef-camisa').textContent = '#'+(r['Nº Camisa']||r['N Camisa']||'—');
+  document.getElementById('ef-tipo').textContent = r['Tipo Contrato']||'—';
+  document.getElementById('ef-datas').textContent = 'Contratado em ' + (r['Data Contratação']||r['Data Contratacao']||'—') + ' · Válido até ' + (r['Validade Contrato']||'—');
+  document.getElementById('ef-resp').textContent = r['Registrado por']||'—';
+  document.getElementById('ef-status').textContent = r['Status Contrato']||'—';
+  document.getElementById('ef-obs').textContent = r['Observações']||r['Observacoes']||'Sem observações';
+  // Badge status
+  var s = r['Status Contrato']||'';
+  var cls = s==='Ativo'?'ativo':s==='Rescindido'?'rescindido':'emprestimo';
+  document.getElementById('ef-badge').innerHTML = '<span class="el-badge '+cls+'">'+s+'</span>';
+  // Dias restantes
+  var valStr = r['Validade Contrato']||'';
+  var diasEl = document.getElementById('ef-dias');
+  if(valStr) {
+    var parts = valStr.split('/');
+    var valDate = parts.length===3 ? new Date(parts[2],parts[1]-1,parts[0]) : new Date(valStr);
+    var hoje = new Date(); hoje.setHours(0,0,0,0);
+    var diff = Math.ceil((valDate-hoje)/(1000*60*60*24));
+    diasEl.textContent = diff < 0 ? 'VENCIDO' : diff;
+    diasEl.style.color = diff < 0 ? 'var(--re)' : diff <= 30 ? '#ff6b35' : diff <= 60 ? 'var(--ye)' : 'var(--gr)';
+  } else {
+    diasEl.textContent = '—';
+  }
+  var atletaId = r['ID'] || '0';
+  loadDocs(atletaId);
+  renderDocs(atletaId);
+  document.getElementById('el-ficha-bg').classList.add('open');
+}
+function fecharFicha() {
+  document.getElementById('el-ficha-bg').classList.remove('open');
+}
+
+
+var SCRIPT_URL2 = 'https://script.google.com/macros/s/AKfycbyNgyTbvYTcX465s-ShnjxBDm9BJnsF4PnOliKTIgLidZ3GC48GOwR9Y_LXtmF-wtWu/exec';
+var docTypes2 = ['RG / CPF','Contrato Assinado','Atestado Medico','Foto Oficial'];
+var currentDocs2 = {};
+
+function loadDocs(atletaId) {
+  var el = document.getElementById('ef-docs');
+  if(el) el.innerHTML = '<div style="color:var(--ts);font-size:11px;font-style:italic">Carregando...</div>';
+  fetch(SCRIPT_URL2 + '?action=getDocs&atletaId=' + encodeURIComponent(atletaId))
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      currentDocs2 = data.success ? data.docs : {};
+      renderDocs(atletaId);
+    })
+    .catch(function(){
+      currentDocs2 = {};
+      renderDocs(atletaId);
+    });
+}
+
+function renderDocs(atletaId) {
+  var el = document.getElementById('ef-docs');
+  if(!el) return;
+  el.innerHTML = '';
+  docTypes2.forEach(function(d, i) {
+    var info = currentDocs2[d] || {status:'Pendente', link:''};
+    var s = info.status || 'Pendente';
+    var cls = s==='Entregue' ? 'doc-ok' : s==='Vencido' ? 'doc-venc' : 'doc-pend';
+    var label = s==='Entregue' ? '✓ Entregue' : s==='Vencido' ? '⚠ Vencido' : '○ Pendente';
+
+    var item = document.createElement('div');
+    item.className = 'el-doc-item';
+
+    var row = document.createElement('div');
+    row.className = 'el-doc-item-row';
+
+    var lbl = document.createElement('span');
+    lbl.className = 'el-doc-label';
+    lbl.textContent = d;
+
+    var right = document.createElement('div');
+    right.style.cssText = 'display:flex;gap:6px;align-items:center';
+
+    if(info.link) {
+      var link = document.createElement('a');
+      link.className = 'el-doc-link';
+      link.href = info.link;
+      link.target = '_blank';
+      link.textContent = '🔗 Ver arquivo';
+      right.appendChild(link);
+    }
+
+    var badge = document.createElement('span');
+    badge.className = 'el-doc-status ' + cls;
+    badge.textContent = label;
+    badge.style.cursor = 'pointer';
+    badge.setAttribute('data-atletaid', atletaId);
+    badge.setAttribute('data-doctype', d);
+    badge.setAttribute('data-idx', i);
+    badge.onclick = function() {
+      var aid = this.getAttribute('data-atletaid');
+      var dt = this.getAttribute('data-doctype');
+      var idx = parseInt(this.getAttribute('data-idx'));
+      cycleDocStatus(aid, dt, idx);
+    };
+    right.appendChild(badge);
+
+    row.appendChild(lbl);
+    row.appendChild(right);
+    item.appendChild(row);
+
+    // Upload area
+    var uploadDiv = document.createElement('div');
+    uploadDiv.id = 'doc-upload-' + i;
+    uploadDiv.style.cssText = 'display:' + (s==='Entregue' ? 'flex' : 'none') + ';gap:6px;align-items:center;margin-top:4px';
+
+    var fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.id = 'doc-file-' + i;
+    fileInput.style.display = 'none';
+    fileInput.setAttribute('data-atletaid', atletaId);
+    fileInput.setAttribute('data-doctype', d);
+    fileInput.setAttribute('data-idx', i);
+    fileInput.onchange = function() {
+      uploadDoc(
+        this.getAttribute('data-atletaid'),
+        this.getAttribute('data-doctype'),
+        parseInt(this.getAttribute('data-idx'))
+      );
+    };
+
+    var uploadBtn = document.createElement('button');
+    uploadBtn.className = 'el-doc-upload-btn';
+    uploadBtn.textContent = '↑ Anexar arquivo';
+    uploadBtn.setAttribute('data-idx', i);
+    uploadBtn.onclick = function() {
+      document.getElementById('doc-file-' + this.getAttribute('data-idx')).click();
+    };
+
+    var prog = document.createElement('span');
+    prog.id = 'doc-prog-' + i;
+    prog.style.cssText = 'font-size:10px;color:var(--ts);font-style:italic';
+
+    uploadDiv.appendChild(fileInput);
+    uploadDiv.appendChild(uploadBtn);
+    uploadDiv.appendChild(prog);
+    item.appendChild(uploadDiv);
+
+    el.appendChild(item);
+  });
+}
+
+function cycleDocStatus(atletaId, docType, idx) {
+  var info = currentDocs2[docType] || {status:'Pendente', link:''};
+  var current = info.status || 'Pendente';
+  var next = current==='Pendente' ? 'Entregue' : current==='Entregue' ? 'Vencido' : 'Pendente';
+  currentDocs2[docType] = {status:next, link:info.link||''};
+  fetch(SCRIPT_URL2, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({action:'updateDocStatus', atletaId:atletaId, docType:docType, status:next})
+  }).catch(function(){});
+  renderDocs(atletaId);
+}
+
+function uploadDoc(atletaId, docType, idx) {
+  var fileInput = document.getElementById('doc-file-'+idx);
+  if(!fileInput || !fileInput.files[0]) return;
+  var file = fileInput.files[0];
+  var prog = document.getElementById('doc-prog-'+idx);
+  if(prog) prog.textContent = 'Enviando...';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result.split(',')[1];
+    var atletaNome = document.getElementById('ef-nomec') ? document.getElementById('ef-nomec').textContent : 'Atleta';
+    fetch(SCRIPT_URL2, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        action:'uploadDoc',
+        atletaId:atletaId, atletaNome:atletaNome,
+        docType:docType, fileName:file.name,
+        fileData:base64, mimeType:file.type
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.success) {
+        currentDocs2[docType] = {status:'Entregue', link:data.link};
+        if(prog) prog.textContent = 'Enviado!';
+        setTimeout(function(){ if(prog) prog.textContent=''; }, 3000);
+        renderDocs(atletaId);
+      } else {
+        if(prog) prog.textContent = 'Erro ao enviar.';
+      }
+    })
+    .catch(function(){ if(prog) prog.textContent = 'Erro de conexao.'; });
+  };
+  reader.readAsDataURL(file);
+}
+
+function getDocSummary(atletaId) { return 0; }
 function elTab(filtro, el) {
   elFiltro2 = filtro;
   document.querySelectorAll('.el-tab').forEach(function(t){ t.classList.remove('active'); });
@@ -972,32 +1250,6 @@ function loadDocs(atletaId) {
       currentDocs = {};
       renderDocs(atletaId);
     });
-}
-
-function renderDocs(atletaId) {
-  var html = docTypes2.map(function(d, i) {
-    var info = currentDocs[d] || {status:'Pendente', link:''};
-    var s = info.status || 'Pendente';
-    var cls = s==='Entregue' ? 'doc-ok' : s==='Vencido' ? 'doc-venc' : 'doc-pend';
-    var label = s==='Entregue' ? '&#10003; Entregue' : s==='Vencido' ? '&#9888; Vencido' : '&#9711; Pendente';
-    var linkHtml = info.link ? '<a class="el-doc-link" href="'+info.link+'" target="_blank">&#128279; Ver arquivo</a>' : '';
-    return '<div class="el-doc-item" id="doc-item-'+i+'">' +
-      '<div class="el-doc-item-row">' +
-        '<span class="el-doc-label">'+d+'</span>' +
-        '<div style="display:flex;gap:6px;align-items:center">' +
-          (linkHtml ? linkHtml : '') +
-          '<span class="el-doc-status '+cls+'" style="cursor:pointer" onclick="cycleDocStatus(''+atletaId+'',''+d+'','+i+')">'+label+'</span>' +
-        '</div>' +
-      '</div>' +
-      '<div class="el-doc-upload" id="doc-upload-'+i+'">' +
-        '<input type="file" id="doc-file-'+i+'" style="display:none" onchange="uploadDoc(''+atletaId+'',''+d+'','+i+')">' +
-        '<button class="el-doc-upload-btn" onclick="document.getElementById('doc-file-'+i+'').click()">&#8593; Anexar arquivo</button>' +
-        '<span class="el-doc-loading" id="doc-prog-'+i+'"></span>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-  var el = document.getElementById('ef-docs');
-  if(el) el.innerHTML = html;
 }
 
 function cycleDocStatus(atletaId, docType, idx) {
@@ -1170,62 +1422,7 @@ document.addEventListener('DOMContentLoaded', function() {
     nav.insertBefore(btn,nav.firstChild);
   }
 });
+
 </script>
-
-
-<div class="el-ficha-bg" id="el-ficha-bg" onclick="if(event.target===this)fecharFicha()">
-  <div class="el-ficha">
-    <div class="el-ficha-top">
-      <div class="el-ficha-avatar" id="ef-avatar">?</div>
-      <div class="el-ficha-info">
-        <div class="el-ficha-name" id="ef-nome">—</div>
-        <div class="el-ficha-pos" id="ef-pos">—</div>
-        <div style="margin-top:8px" id="ef-badge"></div>
-      </div>
-      <div>
-        <div class="el-ficha-camisa" id="ef-camisa">#</div>
-      </div>
-      <button class="el-ficha-close" onclick="fecharFicha()">&#10005;</button>
-    </div>
-    <div class="el-ficha-body">
-      <div class="el-ficha-section">
-        <div class="el-ficha-section-title">Dados Pessoais</div>
-        <div class="el-ficha-grid">
-          <div class="el-ficha-field"><div class="el-ficha-field-label">Nome Completo</div><div class="el-ficha-field-val" id="ef-nomec">—</div></div>
-          <div class="el-ficha-field"><div class="el-ficha-field-label">Apelido</div><div class="el-ficha-field-val" id="ef-apelido">—</div></div>
-          <div class="el-ficha-field"><div class="el-ficha-field-label">Data de Nascimento</div><div class="el-ficha-field-val" id="ef-nasc">—</div></div>
-          <div class="el-ficha-field"><div class="el-ficha-field-label">Naturalidade</div><div class="el-ficha-field-val" id="ef-natural">—</div></div>
-        </div>
-      </div>
-      <div class="el-ficha-section">
-        <div class="el-ficha-section-title">Contrato</div>
-        <div class="el-ficha-contrato">
-          <div class="el-ficha-contrato-info">
-            <div class="el-ficha-contrato-tipo" id="ef-tipo">—</div>
-            <div class="el-ficha-contrato-datas" id="ef-datas">—</div>
-          </div>
-          <div>
-            <div class="el-ficha-dias" id="ef-dias">—</div>
-            <div class="el-ficha-dias-label">dias restantes</div>
-          </div>
-        </div>
-      </div>
-      <div class="el-ficha-section">
-        <div class="el-ficha-section-title">Documentacao</div>
-        <div class="el-docs-grid" id="ef-docs"></div>
-        <div class="el-doc-hint">Clique no status para alternar. Os dados sao salvos localmente.</div>
-      </div>
-      <div class="el-ficha-section">
-        <div class="el-ficha-section-title">Informacoes Adicionais</div>
-        <div class="el-ficha-grid">
-          <div class="el-ficha-field"><div class="el-ficha-field-label">Registrado por</div><div class="el-ficha-field-val" id="ef-resp">—</div></div>
-          <div class="el-ficha-field"><div class="el-ficha-field-label">Status</div><div class="el-ficha-field-val" id="ef-status">—</div></div>
-          <div class="el-ficha-field" style="grid-column:1/-1"><div class="el-ficha-field-label">Observacoes</div><div class="el-ficha-field-val" id="ef-obs" style="color:var(--ts)">—</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
