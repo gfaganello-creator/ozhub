@@ -604,8 +604,8 @@ async function sync(){
   
   const [dispData,lesData,plantelData]=await Promise.all([
     fetchCSV('\u2705 Disponibilidade'),
-    fetchCSV('Les\u00f5es'),
-    fetchCSV('Plantel')
+    fetchCSV('\ud83c\udfe5 Les\u00f5es'),
+    fetchCSV('\ud83d\udc65 Plantel')
   ]);
 
   // DISPONIBILIDADE
