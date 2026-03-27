@@ -2719,17 +2719,11 @@ function renderSemanaAtual() {
     var manha = dia.manha || '—';
     var tarde = dia.tarde || '—';
     var isEmpty = (!dia.manha || dia.manha==='') && (!dia.tarde || dia.tarde==='');
-    return '<div style="display:grid;grid-template-columns:28px 52px 1fr 1fr;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(70,162,247,.05)">'+
-      '<div style="font-family:Barlow Condensed,sans-serif;font-size:10px;font-weight:700;color:var(--ts)">'+diasPT[i]+'</div>'+
-      '<div style="font-size:9px;color:var(--ts)">'+(dia.data||'')+'</div>'+
-      '<div>'+
-        '<div style="font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(122,155,181,.5);margin-bottom:1px">Manhã</div>'+
-        '<div style="font-size:10px;color:'+corAtiv(manha)+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+manha+'</div>'+
-      '</div>'+
-      '<div>'+
-        '<div style="font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(122,155,181,.5);margin-bottom:1px">Tarde</div>'+
-        '<div style="font-size:10px;color:'+corAtiv(tarde)+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+tarde+'</div>'+
-      '</div>'+
+    return '<div style="display:grid;grid-template-columns:28px 52px 1fr 1fr;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(70,162,247,.05)">'+
+      '<div style="font-family:Barlow Condensed,sans-serif;font-size:11px;font-weight:700;color:var(--ts)">'+diasPT[i]+'</div>'+
+      '<div style="font-size:10px;color:var(--ts)">'+(dia.data||'')+'</div>'+
+      '<div style="font-size:12px;font-weight:600;color:'+corAtiv(manha)+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+manha+'</div>'+
+      '<div style="font-size:12px;font-weight:600;color:'+corAtiv(tarde)+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+tarde+'</div>'+
     '</div>';
   }).join('');
   var treinos = Object.values(dias).filter(function(d){
@@ -2740,9 +2734,14 @@ function renderSemanaAtual() {
   var semStr = (diasVals[0]&&diasVals[0].data?diasVals[0].data:'') + ' a ' + (diasVals[6]&&diasVals[6].data?diasVals[6].data:'');
   var waMsg = '\u26bd *Programacao Semanal*\nOsasco Sporting | Profissional\n\n\uD83D\uDCC5 Semana: ' + semStr + '\n\uD83C\uDFC3 Treinos: ' + treinos + '\n\n\uD83D\uDD17 ' + hubUrl;
   var waUrl = 'https://wa.me/?text=' + encodeURIComponent(waMsg);
+  var header = '<div style="display:grid;grid-template-columns:28px 52px 1fr 1fr;gap:6px;padding:4px 0;border-bottom:1px solid rgba(70,162,247,.12);margin-bottom:4px">'+
+    '<div></div><div></div>'+
+    '<div style="font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(122,155,181,.6)">Manhã</div>'+
+    '<div style="font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(122,155,181,.6)">Tarde</div>'+
+  '</div>';
   panel.innerHTML =
     '<div style="font-size:10px;color:var(--ts);margin-bottom:8px">'+semanaAtual['Semana Inicio']+'  ·  '+treinos+' treinos</div>'+
-    rows +
+    header + rows +
     '';
   var btnEdit = document.getElementById('btn-editar-semana');
   if(btnEdit) btnEdit.style.display = '';
