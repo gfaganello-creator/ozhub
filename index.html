@@ -609,10 +609,12 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
       <div class="cn2"><button class="cb" onclick="chm(-1)">‹</button><div class="cnt" id="cal-t">MARÇO 2026</div><button class="cb" onclick="chm(1)">›</button></div>
       <div class="cdn"><div>D</div><div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div></div>
       <div class="cday" id="cal-d"></div>
-      <!-- Prog do dia (clique no calendário) -->
-      <div id="cal-day-panel" style="margin-top:12px;border-top:1px solid rgba(70,162,247,.1);padding-top:10px">
-        <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">Programação do Dia</div>
-        <div id="cal-day-content" style="color:var(--ts);font-size:11px">Clique em um dia acima.</div>
+      <!-- Estatísticas da semana -->
+      <div style="margin-top:12px;border-top:1px solid rgba(70,162,247,.1);padding-top:10px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:8px">Semana Atual</div>
+        <div id="cal-stats-content">
+          <div style="color:var(--ts);font-size:11px">Carregando...</div>
+        </div>
       </div>
     </div>
 
@@ -2832,6 +2834,7 @@ function renderizarProgramacoes(rows) {
   // Atualiza calendario com badges de treino
   if(typeof renderCal === 'function') renderCal();
   if(typeof renderSemanaAtual === 'function') renderSemanaAtual();
+  if(typeof renderCalStats === 'function') renderCalStats();
   var container = document.getElementById('prog-lista');
   if(!container) return;
   if(!rows.length) {
@@ -2976,6 +2979,70 @@ var _filtroAtual = 'todos';
 
 var MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 var MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+
+// ══════════════════════════════════════
+// STATS DA SEMANA NO CALENDÁRIO
+// ══════════════════════════════════════
+function renderCalStats() {
+  var el = document.getElementById('cal-stats-content');
+  if (!el) return;
+  if (!window._semanaAtualData) {
+    el.innerHTML = '<div style="color:var(--ts);font-size:11px">Sem programação cadastrada.</div>';
+    return;
+  }
+  var prog = window._semanaAtualData;
+  var dias = {};
+  try { dias = JSON.parse(prog['Dias'] || '{}'); } catch(e) {}
+  var diasNomes = ['Segunda','Terca','Quarta','Quinta','Sexta','Sabado','Domingo'];
+
+  var treinos = 0, folgas = 0, jogos = 0, viagens = 0;
+  diasNomes.forEach(function(d) {
+    var dia = dias[d] || {};
+    var vals = [dia.manha, dia.tarde];
+    vals.forEach(function(v) {
+      if (!v) return;
+      if (v === 'Treino Campo' || v === 'Treino Academia' || v === 'Treino' ||
+          v === 'Treino Campo - Liberatti' || v === 'Treino Campo - Exercito' ||
+          v.indexOf('Treino') === 0) treinos++;
+      if (v === 'Folga') folgas++;
+      if (v === 'Jogo') jogos++;
+      if (v === 'Viagem') viagens++;
+    });
+  });
+
+  // Conta dias únicos de treino (não sessões)
+  var diasTreino = diasNomes.filter(function(d) {
+    var dia = dias[d] || {};
+    return (dia.manha && dia.manha.indexOf('Treino') === 0) ||
+           (dia.tarde && dia.tarde.indexOf('Treino') === 0) ||
+           dia.manha === 'Treino Campo' || dia.tarde === 'Treino Campo' ||
+           dia.manha === 'Treino Academia' || dia.tarde === 'Treino Academia' ||
+           dia.manha === 'Treino Campo - Liberatti' || dia.tarde === 'Treino Campo - Liberatti' ||
+           dia.manha === 'Treino Campo - Exercito' || dia.tarde === 'Treino Campo - Exercito';
+  }).length;
+
+  var diasFolga = diasNomes.filter(function(d) {
+    var dia = dias[d] || {};
+    return dia.manha === 'Folga' && (!dia.tarde || dia.tarde === 'Folga' || dia.tarde === '');
+  }).length;
+
+  var stats = [
+    { v: diasTreino, l: 'Treinos', cor: 'var(--gr)' },
+    { v: diasFolga,  l: 'Folgas',  cor: 'var(--re)' },
+  ];
+  if (jogos > 0)   stats.push({ v: jogos,   l: 'Jogos',   cor: 'var(--az)' });
+  if (viagens > 0) stats.push({ v: viagens, l: 'Viagens', cor: '#f7a846' });
+
+  el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(' + stats.length + ',1fr);gap:4px">' +
+    stats.map(function(s) {
+      return '<div style="background:rgba(70,162,247,.04);border:1px solid rgba(70,162,247,.08);border-radius:3px;padding:8px 6px;text-align:center">' +
+        '<div style="font-family:Bebas Neue,sans-serif;font-size:26px;line-height:1;color:' + s.cor + '">' + s.v + '</div>' +
+        '<div style="font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);margin-top:3px">' + s.l + '</div>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
 
 function carregarJogos() {
   var SID = '1Fj8RhuKjicvVyF06CPJqF7kiKpEsquCKFSHX3qf3Pus';
