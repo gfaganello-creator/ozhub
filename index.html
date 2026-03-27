@@ -3664,9 +3664,46 @@ function salvarProgDiaria() {
   }).catch(function(){});
 
   fecharProgDiaria();
-  // Mostra feedback e recarrega
+
+  // Monta mensagem WhatsApp
+  var waLines = atividades.map(function(a){
+    return a.hora + ' — ' + a.atividade + (a.local ? ' (' + a.local + ')' : '');
+  }).join('%0A');
+  var waTitulo = titulo ? '%0A' + encodeURIComponent(titulo) : '';
+  var waObs = obs ? '%0A%0AObs: ' + encodeURIComponent(obs) : '';
+  var waMsgRaw = '\uD83D\uDDD3\uFE0F *Programacao Diaria*\nOsasco Sporting\n\n' +
+    diaSemana + ' · ' + dataBR + waTitulo + '\n\n' + waLines + waObs;
+  var waUrl = 'https://wa.me/?text=' + encodeURIComponent(waMsgRaw);
+
+  // Mostra modal de sucesso igual à semanal
+  mostrarSucessoDiaria(waUrl);
+
   setTimeout(function(){ carregarProgDiaria(); }, 2000);
-  alert('Programação diária salva!');
+}
+
+function fecharSucessoDiaria() { var bg = document.getElementById("prog-diaria-sucesso-bg"); if(bg) bg.style.display="none"; }
+
+function mostrarSucessoDiaria(waUrl) {
+  // Reutiliza o modal de preview da programação semanal se existir, senão cria simples
+  var bg = document.getElementById('prog-diaria-sucesso-bg');
+  if (!bg) {
+    bg = document.createElement('div');
+    bg.id = 'prog-diaria-sucesso-bg';
+    bg.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20001;align-items:center;justify-content:center;padding:20px';
+    bg.innerHTML =
+      '<div style="background:rgba(8,16,26,.98);border:1px solid rgba(206,170,120,.25);border-radius:10px;width:100%;max-width:400px;padding:32px;text-align:center">' +
+        '<div style="font-size:40px;margin-bottom:12px">✅</div>' +
+        '<div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--ww);letter-spacing:1px;margin-bottom:8px">Programação salva!</div>' +
+        '<div style="font-size:12px;color:var(--ts);margin-bottom:20px">Email enviado. Compartilhe via WhatsApp:</div>' +
+        '<div style="display:flex;gap:10px;justify-content:center">' +
+          '<a id="prog-diaria-wa-btn" href="#" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff;font-family:Barlow Condensed,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:10px 20px;border-radius:3px;text-decoration:none">📱 WhatsApp</a>' +
+          '<button onclick="fecharSucessoDiaria()" style="font-family:Barlow Condensed,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:10px 20px;border-radius:3px;cursor:pointer;background:transparent;color:var(--ts);border:1px solid rgba(70,162,247,.2)">Fechar</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(bg);
+  }
+  document.getElementById('prog-diaria-wa-btn').href = waUrl;
+  bg.style.display = 'flex';
 }
 
 function carregarProgDiaria() {
@@ -3736,14 +3773,7 @@ function renderProgDiaria(prog) {
 
   var obs = prog['Obs'] ? '<div style="margin-top:8px;font-size:10px;color:var(--ts);font-style:italic">'+prog['Obs']+'</div>' : '';
 
-  var dataTxt = (prog['Dia Semana']||'') + ' · ' + (prog['Data BR']||'');
-  var waLines = atividades.map(function(a){ return a.hora + ' — ' + a.atividade + (a.local?' ('+a.local+')':''); }).join('\n');
-  var waMsg = '\uD83D\uDDD3\uFE0F *Programacao Diaria*\nOsasco Sporting\n\n' + dataTxt + (prog['Titulo']?'\n'+prog['Titulo']:'') + '\n\n' + waLines + (prog['Obs']?'\n\nObs: '+prog['Obs']:'');
-  var waUrl = 'https://wa.me/?text=' + encodeURIComponent(waMsg);
-  var waBtn = '<div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(206,170,120,.1)">'+
-    '<a href="'+waUrl+'" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;background:#25D366;color:#fff;font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:6px;border-radius:2px;text-decoration:none">📱 WhatsApp</a>'+
-  '</div>';
-  content.innerHTML = titulo + linhas + obs + waBtn;
+  content.innerHTML = titulo + linhas + obs;
 }
 
 // Carrega ao iniciar
