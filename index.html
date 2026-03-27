@@ -3324,78 +3324,45 @@ function voltarImportarFPF() {
   fpfResetarParaStep('upload');
 }
 
-async function getAnthropicKey() {
-  // Usa a chave via Apps Script como proxy para evitar expor no frontend
-  // O Apps Script retorna a chave armazenada nas propriedades do script
-  try {
-    var r = await fetch(SCRIPT_URL2 + '?action=getApiKey', {mode: 'cors'});
-    var d = await r.json();
-    if (d && d.key) return d.key;
-  } catch(e) {}
-  return '';
-}
-
 async function processarPDFFPF() {
   if (!_fpfFileBase64) return;
   fpfResetarParaStep('loading');
 
   var msgs = [
-    'Claude está lendo a tabela da FPF...',
-    'Identificando datas e adversários...',
-    'Verificando competições e fases...',
+    'Enviando PDF para processamento...',
+    'Claude esta lendo a tabela da FPF...',
+    'Identificando datas e adversarios...',
     'Organizando os dados...'
   ];
   var mi = 0;
   var interval = setInterval(function() {
     var el = document.getElementById('fpf-loading-msg');
-    if (el) el.textContent = msgs[mi % msgs.length];
+    if (el) el.textContent = msgs[Math.min(mi, msgs.length-1)];
     mi++;
-  }, 1800);
+  }, 3000);
 
   try {
-    var prompt = [
-      'Voce esta analisando uma tabela de jogos da FPF para o time Osasco Sporting, equipe ' + _fpfEquipeSelecionada + '.',
-      'Extraia TODOS os jogos e retorne APENAS um JSON valido (sem markdown, sem explicacao) no formato:',
-      '{"jogos": [{"data":"DD/MM/YYYY","hora":"HH:MM","adversario":"Nome","competicao":"Nome","fase":"Nome","mandante":"Sim ou Nao","local":"Nome do Estadio"}]}',
-      'Regras: mandante=Sim se Osasco jogar em casa. Se sem horario use A definir. Se sem local use A definir.',
-      'Extraia TODOS os jogos passados e futuros. Retorne SOMENTE o JSON, sem nenhum texto antes ou depois.'
-    ].join(' ');
+    // Envia para Apps Script processar (GAS chama Claude API sem CORS)
+    var formData = new FormData();
+    formData.append('action', 'processarPDFFPF');
+    formData.append('equipe', _fpfEquipeSelecionada);
+    formData.append('pdfBase64', _fpfFileBase64);
 
-    var response = await fetch('https://api.anthropic.com/v1/messages', {
+    var response = await fetch(SCRIPT_URL2, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': await getAnthropicKey(),
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-iab': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'document',
-              source: {type: 'base64', media_type: 'application/pdf', data: _fpfFileBase64}
-            },
-            {type: 'text', text: prompt}
-          ]
-        }]
+      body: new URLSearchParams({
+        action: 'processarPDFFPF',
+        equipe: _fpfEquipeSelecionada,
+        pdfBase64: _fpfFileBase64
       })
     });
 
     clearInterval(interval);
 
     var data = await response.json();
-    var text = (data.content || []).map(function(b){ return b.text || ''; }).join('');
+    if (!data.success) throw new Error(data.error || 'Erro ao processar PDF');
 
-    // Limpa possível markdown
-    text = text.replace(/```json/g,'').replace(/```/g,'').trim();
-
-    var parsed = JSON.parse(text);
-    _fpfJogosExtraidos = parsed.jogos || [];
-
+    _fpfJogosExtraidos = data.jogos || [];
     if (!_fpfJogosExtraidos.length) throw new Error('Nenhum jogo encontrado no PDF.');
 
     fpfMostrarRevisao();
@@ -3403,67 +3370,10 @@ async function processarPDFFPF() {
   } catch(err) {
     clearInterval(interval);
     fpfResetarParaStep('upload');
-    var msg = err.message || 'Erro ao processar PDF.';
-    alert('Erro: ' + msg + ' Verifique se o PDF e da FPF e tente novamente.');
+    alert('Erro: ' + (err.message || err));
   }
 }
 
-function fpfMostrarRevisao() {
-  fpfResetarParaStep('review');
-
-  var novos = 0, atualizados = 0, ignorados = 0;
-  var jogosExistentes = _todosJogos || [];
-
-  var rows = _fpfJogosExtraidos.map(function(j) {
-    // Verifica duplicata: mesma data + adversário + competição
-    var existe = jogosExistentes.find(function(ex) {
-      return ex['Data'] === j.data &&
-             (ex['Adversario']||'').toLowerCase() === (j.adversario||'').toLowerCase() &&
-             (ex['Competicao']||'').toLowerCase() === (j.competicao||'').toLowerCase();
-    });
-
-    var status, corStatus, bgStatus;
-    if (existe) {
-      var temResultado = (existe['Gols Casa']||'') !== '' && (existe['Gols Fora']||'') !== '';
-      if (temResultado) {
-        status = 'Ignorado (já tem resultado)'; corStatus = 'var(--ts)'; bgStatus = 'rgba(122,155,181,.08)';
-        ignorados++;
-      } else {
-        status = 'Atualizar'; corStatus = 'var(--ye)'; bgStatus = 'rgba(245,158,11,.08)';
-        atualizados++;
-      }
-    } else {
-      status = 'Novo'; corStatus = 'var(--gr)'; bgStatus = 'rgba(46,204,142,.08)';
-      novos++;
-    }
-
-    return '<tr style="border-bottom:1px solid rgba(70,162,247,.06)">' +
-      '<td style="padding:7px 8px;font-size:11px;color:var(--ww);font-weight:600">' + j.data + '</td>' +
-      '<td style="padding:7px 8px;font-size:11px;color:var(--ts)">' + (j.hora||'-') + '</td>' +
-      '<td style="padding:7px 8px;font-size:12px;color:var(--ww)">' + j.adversario + '</td>' +
-      '<td style="padding:7px 8px;font-size:10px;color:var(--ts)">' + j.competicao + '</td>' +
-      '<td style="padding:7px 8px;font-size:10px;color:var(--ts)">' + (j.mandante==='Sim'?'🏠':'✈️') + '</td>' +
-      '<td style="padding:7px 8px"><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:2px;background:' + bgStatus + ';color:' + corStatus + '">' + status + '</span></td>' +
-    '</tr>';
-  }).join('');
-
-  document.getElementById('fpf-review-summary').textContent =
-    _fpfJogosExtraidos.length + ' jogos encontrados — ' +
-    novos + ' novos, ' + atualizados + ' para atualizar, ' + ignorados + ' ignorados';
-
-  document.getElementById('fpf-review-table').innerHTML =
-    '<table style="width:100%;border-collapse:collapse">' +
-    '<thead><tr>' +
-      '<th style="padding:6px 8px;text-align:left;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.15)">Data</th>' +
-      '<th style="padding:6px 8px;text-align:left;font-size:9px;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.15)">Hora</th>' +
-      '<th style="padding:6px 8px;text-align:left;font-size:9px;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.15)">Adversário</th>' +
-      '<th style="padding:6px 8px;text-align:left;font-size:9px;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.15)">Competição</th>' +
-      '<th style="padding:6px 8px;text-align:left;font-size:9px;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.15)">Local</th>' +
-      '<th style="padding:6px 8px;text-align:left;font-size:9px;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.15)">Status</th>' +
-    '</tr></thead>' +
-    '<tbody>' + rows + '</tbody>' +
-    '</table>';
-}
 
 async function confirmarImportarFPF() {
   var btn = document.getElementById('fpf-btn-confirmar');
