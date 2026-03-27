@@ -2769,7 +2769,13 @@ function carregarProgramacoes() {
   fetch(BASE + encodeURIComponent('Programacao'))
     .then(function(r){return r.text();})
     .then(function(txt){
-      if(!txt||txt.length<10) return;
+      if(!txt||txt.length<10) {
+        var panel = document.getElementById('cal-semana-atual');
+        if(panel) panel.innerHTML = '<div style="font-size:12px;color:var(--ts)">Nenhuma programação cadastrada ainda.</div>';
+        var btnEdit = document.getElementById('btn-editar-semana');
+        if(btnEdit) btnEdit.style.display = 'none';
+        return;
+      }
       function pcsv(line){var r=[],c='',q=false;for(var i=0;i<line.length;i++){var ch=line[i];if(ch==='"'){if(q&&line[i+1]==='"'){c+='"';i++;}else{q=!q;}}else if(ch===','&&!q){r.push(c);c='';}else{c+=ch;}}r.push(c);return r;}
       var lines=txt.split('\n');
       var hdrs=pcsv(lines[0]).map(function(h){return h.replace(/^"|"$/g,'').trim();});
@@ -3226,6 +3232,7 @@ var _fpfFileBase64 = '';
 function abrirImportarFPF() {
   document.getElementById('fpf-modal-bg').style.display = 'flex';
   fpfResetarParaStep('upload');
+  fpfIniciarDragDrop();
 }
 
 function fecharImportarFPF() {
@@ -3270,29 +3277,28 @@ function onFPFFileSelect(event) {
   fpfCarregarArquivo(file);
 }
 
-// Drag & Drop
-(function() {
-  document.addEventListener('DOMContentLoaded', function() {
-    var dz = document.getElementById('fpf-dropzone');
-    if (!dz) return;
-    dz.addEventListener('dragover', function(e) {
-      e.preventDefault();
-      dz.style.borderColor = 'rgba(206,170,120,.8)';
-      dz.style.background = 'rgba(206,170,120,.08)';
-    });
-    dz.addEventListener('dragleave', function() {
-      dz.style.borderColor = 'rgba(206,170,120,.3)';
-      dz.style.background = 'transparent';
-    });
-    dz.addEventListener('drop', function(e) {
-      e.preventDefault();
-      dz.style.borderColor = 'rgba(206,170,120,.3)';
-      dz.style.background = 'transparent';
-      var file = e.dataTransfer.files[0];
-      if (file && file.type === 'application/pdf') fpfCarregarArquivo(file);
-    });
+// Drag & Drop — inicializado ao abrir o modal
+function fpfIniciarDragDrop() {
+  var dz = document.getElementById('fpf-dropzone');
+  if (!dz || dz._ddInit) return;
+  dz._ddInit = true;
+  dz.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    dz.style.borderColor = 'rgba(206,170,120,.8)';
+    dz.style.background = 'rgba(206,170,120,.08)';
   });
-})();
+  dz.addEventListener('dragleave', function() {
+    dz.style.borderColor = 'rgba(206,170,120,.3)';
+    dz.style.background = 'transparent';
+  });
+  dz.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dz.style.borderColor = 'rgba(206,170,120,.3)';
+    dz.style.background = 'transparent';
+    var file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') fpfCarregarArquivo(file);
+  });
+}
 
 function fpfCarregarArquivo(file) {
   var reader = new FileReader();
