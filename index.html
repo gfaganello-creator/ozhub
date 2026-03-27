@@ -638,7 +638,8 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--ts)">Semana Atual</div>
         <div style="display:flex;gap:6px">
           <button class="ppf-edit-btn" onclick="editarSemanaAtual()" id="btn-editar-semana" style="display:none;font-size:9px;padding:3px 8px">✏️ Editar</button>
-          <button class="prog-new-btn" onclick="abrirNovaProgamacao()" style="font-size:9px;padding:3px 10px">+ Nova</button>
+          <button class="prog-new-btn" onclick="abrirNovaProgamacao()" style="font-size:9px;padding:3px 10px">+ Semanal</button>
+          <button class="prog-new-btn" onclick="abrirProgDiaria()" style="font-size:9px;padding:3px 10px;background:rgba(206,170,120,.12);color:var(--go);border:1px solid rgba(206,170,120,.3)">+ Diária</button>
         </div>
       </div>
       <div id="cal-semana-atual" style="color:var(--ts);font-size:12px">Carregando...</div>
@@ -646,10 +647,27 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
 
   </div>
 
-  <!-- LINHA 2: Programação do Dia (clique no calendário) -->
-  <div id="cal-day-panel" style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:4px;padding:18px">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--ts);margin-bottom:10px">Programação do Dia</div>
-    <div id="cal-day-content" style="color:var(--ts);font-size:12px">Clique em um dia no calendário para ver as atividades.</div>
+  <!-- LINHA 2: Prog do Dia + Prog Diária -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+    <!-- Programação do Dia (clique no calendário) -->
+    <div id="cal-day-panel" style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:4px;padding:18px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--ts);margin-bottom:10px">Programação do Dia</div>
+      <div id="cal-day-content" style="color:var(--ts);font-size:12px">Clique em um dia no calendário para ver as atividades.</div>
+    </div>
+
+    <!-- Programação Diária de Hoje -->
+    <div style="background:var(--c2);border:1px solid rgba(206,170,120,.15);border-radius:4px;padding:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--go)">Programação Diária</div>
+          <div id="prog-diaria-data" style="font-size:10px;color:var(--ts);margin-top:2px">Hoje</div>
+        </div>
+        <button class="ppf-edit-btn" onclick="editarProgDiaria()" id="btn-editar-diaria" style="display:none;font-size:9px;padding:3px 8px">✏️ Editar</button>
+      </div>
+      <div id="prog-diaria-content" style="color:var(--ts);font-size:12px">Carregando...</div>
+    </div>
+
   </div>
 
   <!-- Lista oculta mas ainda carregada para o calendário -->
@@ -3454,6 +3472,270 @@ function fpfParseCsv(txt) {
     return o;
   });
 }
+</script>
+
+
+<!-- ═══════════════════════════════════════ -->
+<!-- MODAL PROGRAMAÇÃO DIÁRIA               -->
+<!-- ═══════════════════════════════════════ -->
+<div id="prog-diaria-modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20000;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)fecharProgDiaria()">
+  <div style="background:rgba(8,16,26,.98);border:1px solid rgba(206,170,120,.25);border-radius:10px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto">
+
+    <!-- Header -->
+    <div style="padding:24px 28px 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div id="prog-diaria-modal-title" style="font-family:Bebas Neue,sans-serif;font-size:24px;color:var(--ww);letter-spacing:2px">NOVA PROGRAMAÇÃO DIÁRIA</div>
+        <div style="font-size:10px;color:var(--ts);margin-top:2px">Programação hora a hora do dia</div>
+      </div>
+      <button onclick="fecharProgDiaria()" style="background:none;border:none;color:var(--ts);cursor:pointer;font-size:20px;padding:4px">✕</button>
+    </div>
+
+    <div style="padding:0 28px 28px">
+      <!-- Data -->
+      <div style="margin-bottom:16px">
+        <label style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);display:block;margin-bottom:6px">Data</label>
+        <input type="date" id="prog-diaria-data-input" class="el-input" style="width:200px">
+      </div>
+
+      <!-- Descrição do dia -->
+      <div style="margin-bottom:16px">
+        <label style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);display:block;margin-bottom:6px">Título / Descrição do Dia</label>
+        <input type="text" id="prog-diaria-titulo" class="el-input" placeholder="Ex: Dia de Jogo — Paulista A2">
+      </div>
+
+      <!-- Atividades hora a hora -->
+      <div style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <label style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Atividades</label>
+          <button onclick="adicionarAtividade()" style="font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 12px;border-radius:2px;cursor:pointer;background:rgba(70,162,247,.12);color:var(--az);border:1px solid rgba(70,162,247,.25)">+ Adicionar Horário</button>
+        </div>
+        <div id="prog-diaria-atividades" style="display:flex;flex-direction:column;gap:6px">
+          <!-- Atividades são adicionadas dinamicamente -->
+        </div>
+      </div>
+
+      <!-- Observações -->
+      <div style="margin-bottom:20px">
+        <label style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);display:block;margin-bottom:6px">Observações</label>
+        <input type="text" id="prog-diaria-obs" class="el-input" placeholder="Ex: Concentração obrigatória às 07:00">
+      </div>
+
+      <!-- Footer -->
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="el-btn el-btn-secondary" onclick="fecharProgDiaria()">Cancelar</button>
+        <button class="el-btn el-btn-primary" onclick="salvarProgDiaria()" style="background:var(--go);border-color:var(--go);color:var(--bk)">Salvar Programação</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// PROGRAMAÇÃO DIÁRIA
+// ══════════════════════════════════════
+var _progDiariaAtual = null;
+var _progDiariaModo = 'nova';
+var _atividadeCount = 0;
+
+function abrirProgDiaria() {
+  _progDiariaModo = 'nova';
+  _progDiariaAtual = null;
+  _atividadeCount = 0;
+  document.getElementById('prog-diaria-modal-title').textContent = 'NOVA PROGRAMAÇÃO DIÁRIA';
+  // Data padrão: hoje
+  var hoje = new Date();
+  var dd = String(hoje.getDate()).padStart(2,'0');
+  var mm = String(hoje.getMonth()+1).padStart(2,'0');
+  document.getElementById('prog-diaria-data-input').value = hoje.getFullYear()+'-'+mm+'-'+dd;
+  document.getElementById('prog-diaria-titulo').value = '';
+  document.getElementById('prog-diaria-obs').value = '';
+  document.getElementById('prog-diaria-atividades').innerHTML = '';
+  // Adiciona 3 linhas iniciais
+  adicionarAtividade('08:00','Apresentação','Estádio');
+  adicionarAtividade('08:30','Pré-treino','');
+  adicionarAtividade('09:30','Treino','');
+  document.getElementById('prog-diaria-modal-bg').style.display = 'flex';
+}
+
+function editarProgDiaria() {
+  if (!_progDiariaAtual) return;
+  var r = _progDiariaAtual;
+  _progDiariaModo = 'editar';
+  document.getElementById('prog-diaria-modal-title').textContent = 'EDITAR PROGRAMAÇÃO DIÁRIA';
+  document.getElementById('prog-diaria-data-input').value = r['Data Raw'] || '';
+  document.getElementById('prog-diaria-titulo').value = r['Titulo'] || '';
+  document.getElementById('prog-diaria-obs').value = r['Obs'] || '';
+  document.getElementById('prog-diaria-atividades').innerHTML = '';
+  _atividadeCount = 0;
+  var atividades = [];
+  try { atividades = JSON.parse(r['Atividades'] || '[]'); } catch(e) {}
+  atividades.forEach(function(a) {
+    adicionarAtividade(a.hora, a.atividade, a.local);
+  });
+  document.getElementById('prog-diaria-modal-bg').style.display = 'flex';
+}
+
+function fecharProgDiaria() {
+  document.getElementById('prog-diaria-modal-bg').style.display = 'none';
+}
+
+function adicionarAtividade(hora, atividade, local) {
+  hora = hora || '';
+  atividade = atividade || '';
+  local = local || '';
+  var id = ++_atividadeCount;
+  var div = document.createElement('div');
+  div.id = 'ativ-row-' + id;
+  div.style.cssText = 'display:grid;grid-template-columns:80px 1fr 120px 28px;gap:6px;align-items:center';
+  div.innerHTML =
+    '<input type="time" class="el-input" id="ativ-hora-'+id+'" value="'+hora+'" style="padding:6px 8px;font-size:12px">'+
+    '<input type="text" class="el-input" id="ativ-atv-'+id+'" value="'+atividade+'" placeholder="Atividade" style="padding:6px 8px;font-size:12px">'+
+    '<input type="text" class="el-input" id="ativ-loc-'+id+'" value="'+local+'" placeholder="Local" style="padding:6px 8px;font-size:12px">'+
+    '<button onclick="removerAtividade('+id+')" style="background:none;border:none;color:var(--ts);cursor:pointer;font-size:16px;padding:0;line-height:1">✕</button>';
+  document.getElementById('prog-diaria-atividades').appendChild(div);
+}
+
+function removerAtividade(id) {
+  var el = document.getElementById('ativ-row-' + id);
+  if (el) el.remove();
+}
+
+function getAtividades() {
+  var result = [];
+  for (var i = 1; i <= _atividadeCount; i++) {
+    var horaEl = document.getElementById('ativ-hora-' + i);
+    var atvEl  = document.getElementById('ativ-atv-' + i);
+    var locEl  = document.getElementById('ativ-loc-' + i);
+    if (!horaEl) continue; // foi removida
+    var hora = horaEl.value.trim();
+    var atv  = atvEl.value.trim();
+    if (!hora && !atv) continue;
+    result.push({hora: hora, atividade: atv, local: locEl.value.trim()});
+  }
+  // Ordena por hora
+  result.sort(function(a,b){ return a.hora.localeCompare(b.hora); });
+  return result;
+}
+
+function salvarProgDiaria() {
+  var dataRaw = document.getElementById('prog-diaria-data-input').value;
+  if (!dataRaw) { alert('Informe a data.'); return; }
+  var titulo  = document.getElementById('prog-diaria-titulo').value.trim();
+  var obs     = document.getElementById('prog-diaria-obs').value.trim();
+  var atividades = getAtividades();
+  if (!atividades.length) { alert('Adicione pelo menos uma atividade.'); return; }
+
+  // Formata data BR
+  var parts = dataRaw.split('-');
+  var dataBR = parts[2]+'/'+parts[1]+'/'+parts[0];
+  var diasSemana = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  var d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  var diaSemana = diasSemana[d.getDay()];
+
+  var payload = {
+    action: 'saveProgDiaria',
+    modo: _progDiariaModo,
+    progId: (_progDiariaModo === 'editar' && _progDiariaAtual) ? (_progDiariaAtual['ID'] || '') : '',
+    dataRaw: dataRaw,
+    dataBR: dataBR,
+    diaSemana: diaSemana,
+    titulo: titulo,
+    obs: obs,
+    atividades: JSON.stringify(atividades)
+  };
+
+  var formBody = Object.keys(payload).map(function(k) {
+    return encodeURIComponent(k) + '=' + encodeURIComponent(payload[k]);
+  }).join('&');
+
+  fetch(SCRIPT_URL2, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: formBody
+  }).catch(function(){});
+
+  fecharProgDiaria();
+  // Mostra feedback e recarrega
+  setTimeout(function(){ carregarProgDiaria(); }, 2000);
+  alert('Programação diária salva!');
+}
+
+function carregarProgDiaria() {
+  var SID = '1Fj8RhuKjicvVyF06CPJqF7kiKpEsquCKFSHX3qf3Pus';
+  var BASE = 'https://docs.google.com/spreadsheets/d/'+SID+'/gviz/tq?tqx=out:csv&sheet=';
+  fetch(BASE + encodeURIComponent('ProgramacaoDiaria'))
+    .then(function(r){ return r.text(); })
+    .then(function(txt) {
+      if (!txt || txt.length < 10) {
+        renderProgDiaria(null);
+        return;
+      }
+      function pcsv(line){var r=[],c='',q=false;for(var i=0;i<line.length;i++){var ch=line[i];if(ch==='"'){if(q&&line[i+1]==='"'){c+='"';i++;}else{q=!q;}}else if(ch===','&&!q){r.push(c);c='';}else{c+=ch;}}r.push(c);return r;}
+      var lines = txt.split('
+');
+      var hdrs = pcsv(lines[0]).map(function(h){ return h.replace(/^"|"$/g,'').trim(); });
+      var rows = lines.slice(1).filter(function(l){ return l.trim(); }).map(function(l) {
+        var vs = pcsv(l); var o = {};
+        hdrs.forEach(function(h,i){ o[h] = (vs[i]||'').replace(/^"|"$/g,'').trim(); });
+        return o;
+      }).filter(function(r){ return r['Data Raw']; });
+
+      // Pega a programação de hoje
+      var hoje = new Date();
+      var dd = String(hoje.getDate()).padStart(2,'0');
+      var mm = String(hoje.getMonth()+1).padStart(2,'0');
+      var hojeRaw = hoje.getFullYear()+'-'+mm+'-'+dd;
+      var progHoje = rows.find(function(r){ return r['Data Raw'] === hojeRaw; });
+      // Se não tiver hoje, pega a mais recente futura
+      if (!progHoje) {
+        var futuras = rows.filter(function(r){ return r['Data Raw'] >= hojeRaw; });
+        futuras.sort(function(a,b){ return a['Data Raw'].localeCompare(b['Data Raw']); });
+        progHoje = futuras[0] || rows[rows.length-1] || null;
+      }
+      renderProgDiaria(progHoje);
+    })
+    .catch(function(){ renderProgDiaria(null); });
+}
+
+function renderProgDiaria(prog) {
+  var content = document.getElementById('prog-diaria-content');
+  var dataEl  = document.getElementById('prog-diaria-data');
+  var btnEdit = document.getElementById('btn-editar-diaria');
+  if (!content) return;
+
+  if (!prog) {
+    content.innerHTML = '<div style="font-size:12px;color:var(--ts)">Nenhuma programação diária cadastrada.</div>';
+    if (btnEdit) btnEdit.style.display = 'none';
+    return;
+  }
+
+  _progDiariaAtual = prog;
+  if (btnEdit) btnEdit.style.display = '';
+  if (dataEl) dataEl.textContent = (prog['Dia Semana'] || '') + ' · ' + (prog['Data BR'] || prog['Data Raw'] || '');
+
+  var atividades = [];
+  try { atividades = JSON.parse(prog['Atividades'] || '[]'); } catch(e) {}
+
+  var titulo = prog['Titulo'] ? '<div style="font-family:Bebas Neue,sans-serif;font-size:16px;color:var(--ww);letter-spacing:1px;margin-bottom:10px">'+prog['Titulo']+'</div>' : '';
+
+  var linhas = atividades.map(function(a) {
+    return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(70,162,247,.06)">'+
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:var(--go);min-width:44px">'+a.hora+'</div>'+
+      '<div style="flex:1;font-size:12px;color:var(--ww);font-weight:600">'+a.atividade+'</div>'+
+      (a.local ? '<div style="font-size:10px;color:var(--ts)">'+a.local+'</div>' : '')+
+    '</div>';
+  }).join('');
+
+  var obs = prog['Obs'] ? '<div style="margin-top:8px;font-size:10px;color:var(--ts);font-style:italic">'+prog['Obs']+'</div>' : '';
+
+  content.innerHTML = titulo + linhas + obs;
+}
+
+// Carrega ao iniciar
+document.addEventListener('DOMContentLoaded', function() {
+  carregarProgDiaria();
+});
 </script>
 
 </body>
