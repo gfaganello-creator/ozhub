@@ -3324,6 +3324,17 @@ function voltarImportarFPF() {
   fpfResetarParaStep('upload');
 }
 
+async function getAnthropicKey() {
+  // Usa a chave via Apps Script como proxy para evitar expor no frontend
+  // O Apps Script retorna a chave armazenada nas propriedades do script
+  try {
+    var r = await fetch(SCRIPT_URL2 + '?action=getApiKey', {mode: 'cors'});
+    var d = await r.json();
+    if (d && d.key) return d.key;
+  } catch(e) {}
+  return '';
+}
+
 async function processarPDFFPF() {
   if (!_fpfFileBase64) return;
   fpfResetarParaStep('loading');
@@ -3352,7 +3363,12 @@ async function processarPDFFPF() {
 
     var response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': await getAnthropicKey(),
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-iab': 'true'
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
