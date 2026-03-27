@@ -2719,11 +2719,17 @@ function renderSemanaAtual() {
     var manha = dia.manha || '—';
     var tarde = dia.tarde || '—';
     var isEmpty = (!dia.manha || dia.manha==='') && (!dia.tarde || dia.tarde==='');
-    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(70,162,247,.05)">'+
-      '<div style="width:28px;font-family:Barlow Condensed,sans-serif;font-size:10px;font-weight:700;color:var(--ts)">'+diasPT[i]+'</div>'+
-      '<div style="font-size:9px;color:var(--ts);width:52px">'+(dia.data||'')+'</div>'+
-      '<div style="flex:1;font-size:10px;color:'+corAtiv(manha)+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+manha+'</div>'+
-      '<div style="flex:1;font-size:10px;color:'+corAtiv(tarde)+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right">'+tarde+'</div>'+
+    return '<div style="display:grid;grid-template-columns:28px 52px 1fr 1fr;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid rgba(70,162,247,.05)">'+
+      '<div style="font-family:Barlow Condensed,sans-serif;font-size:10px;font-weight:700;color:var(--ts)">'+diasPT[i]+'</div>'+
+      '<div style="font-size:9px;color:var(--ts)">'+(dia.data||'')+'</div>'+
+      '<div>'+
+        '<div style="font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(122,155,181,.5);margin-bottom:1px">Manhã</div>'+
+        '<div style="font-size:10px;color:'+corAtiv(manha)+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+manha+'</div>'+
+      '</div>'+
+      '<div>'+
+        '<div style="font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(122,155,181,.5);margin-bottom:1px">Tarde</div>'+
+        '<div style="font-size:10px;color:'+corAtiv(tarde)+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+tarde+'</div>'+
+      '</div>'+
     '</div>';
   }).join('');
   var treinos = Object.values(dias).filter(function(d){
