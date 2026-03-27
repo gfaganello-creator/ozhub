@@ -2737,9 +2737,7 @@ function renderSemanaAtual() {
   panel.innerHTML =
     '<div style="font-size:10px;color:var(--ts);margin-bottom:8px">'+semanaAtual['Semana Inicio']+'  ·  '+treinos+' treinos</div>'+
     rows +
-    '<div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(70,162,247,.08)">'+
-      '<a href="'+waUrl+'" target="_blank" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;background:#25D366;color:#fff;font-family:Barlow Condensed,sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:6px;border-radius:2px;text-decoration:none">📱 WhatsApp</a>'+
-    '</div>';
+    '';
   var btnEdit = document.getElementById('btn-editar-semana');
   if(btnEdit) btnEdit.style.display = '';
 }
