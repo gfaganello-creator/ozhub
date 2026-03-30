@@ -4122,6 +4122,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 
+<script>
 // ══════════════════════════════════════
 // RELATÓRIO DA TEMPORADA — VOLT
 // ══════════════════════════════════════
@@ -4153,14 +4154,26 @@ async function carregarRelatorio() {
     fv('Pré Treino')
   ]);
 
+  // DEBUG — log first rows to console
+  console.log('Cadastro cols:', cadastro[0] ? Object.keys(cadastro[0]) : 'empty');
+  console.log('RecData cols:', recData[0] ? Object.keys(recData[0]) : 'empty');
+  console.log('RecData sample:', recData[0]);
+  console.log('PreData cols:', preData[0] ? Object.keys(preData[0]) : 'empty');
+  console.log('PreData sample:', preData[0]);
+
   var totalAtletas = cadastro.filter(function(r){return r['Nome']&&r['Nome'].trim();}).length;
+  console.log('Total atletas:', totalAtletas);
 
   // DISPONIBILIDADE GERAL — % aptos de todos registros
   if(recData && recData.length > 0){
     var aptMap = {};
     recData.forEach(function(r){
-      if(r['Nome']) aptMap[r['Nome']] = r['Característica']||r['Caracteristica']||'';
+      // Try all possible column name variations
+      var nome = r['Nome'] || r['nome'] || '';
+      var car = r['Característica'] || r['Caracteristica'] || r['Característica'] || r['caracteristica'] || '';
+      if(nome) aptMap[nome] = car;
     });
+    console.log('aptMap sample:', Object.entries(aptMap).slice(0,3));
     var total = Object.keys(aptMap).length || totalAtletas;
     var aptos = Object.values(aptMap).filter(function(v){return v.toLowerCase().indexOf('apronto')>=0;}).length;
     var naoAptos = total - aptos;
@@ -4234,5 +4247,6 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 
+</script>
 </body>
 </html>
