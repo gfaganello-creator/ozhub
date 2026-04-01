@@ -505,7 +505,7 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
   <nav>
     <a href="#dashboard">Dashboard</a>
     <a href="#calendario">Calendário</a>
-    <a href="#relatorio">Relatório</a>
+    
     <a href="#plantel-perf" onclick="abrirPlantelPerf(event)">Plantel</a>
   </nav>
 </header>
@@ -517,12 +517,18 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
 <section id="dashboard">
   <div class="sh rv">
     <div><div class="stag">Monitoramento</div><div class="sti">Dashboard</div></div>
-    <div style="display:flex;align-items:center;gap:16px">
-      <div class="sme" id="dash-ts">Conectando...</div>
-      <div style="display:flex;align-items:center;gap:6px;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts)">
-        <span class="spin" id="dash-spin" style="display:none">↻</span>
-        <span id="st-sync"></span>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Temporada</span>
+        <select id="dash-temp-select" onchange="filtrarDashboard(this.value)" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:7px 28px 7px 14px;border-radius:3px;cursor:pointer;background:var(--c2);color:var(--wh);border:1px solid rgba(70,162,247,.3);outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2346a2f7' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center">
+          <option value="2025-2026">2025-26</option>
+          <option value="2024-2025">2024-25</option>
+          <option value="2023-2024">2023-24</option>
+          <option value="todas">Todas</option>
+        </select>
       </div>
+      <div class="sme" id="dash-ts">Conectando...</div>
+      <span id="st-sync" style="font-size:9px;color:var(--ts)"></span>
     </div>
   </div>
 
@@ -585,7 +591,36 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
     </div>
   </div>
 
-  <!-- LINHA 2: Próximo Jogo + Últimos Resultados -->
+  <!-- LINHA 2: Evolução Mensal + KPIs analíticos -->
+  <div class="cr rv" style="margin-top:0">
+    <div class="cd" style="flex:2">
+      <div class="cdt">Evolução da Disponibilidade</div>
+      <div class="cds">% plantel disponível por mês · <span id="dash-evol-label">temporada atual</span></div>
+      <div id="dash-evolucao" class="hb2" style="margin-top:16px">
+        <div style="color:var(--ts);font-size:12px">Carregando...</div>
+      </div>
+    </div>
+    <div class="cd" style="flex:1">
+      <div class="cdt">Indicadores Clínicos</div>
+      <div class="cds">Temporada selecionada</div>
+      <div style="display:flex;flex-direction:column;gap:16px;margin-top:16px">
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:4px">Dias Médios RTS</div>
+          <div style="font-family:Bebas Neue,sans-serif;font-size:32px;color:var(--wh)" id="dash-rts">—</div>
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:4px">Dias Perdidos</div>
+          <div style="font-family:Bebas Neue,sans-serif;font-size:32px;color:var(--re)" id="dash-dias">—</div>
+        </div>
+        <div>
+          <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:4px">Taxa de Recidiva</div>
+          <div style="font-family:Bebas Neue,sans-serif;font-size:32px;color:var(--gr)" id="dash-recidiva">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINHA 3: Próximo Jogo + Últimos Resultados + Ocorrências -->
   <div class="cr rv" style="margin-top:0">
     <div class="cd" style="flex:0.8">
       <div class="cdt">Próximo Jogo</div>
@@ -594,10 +629,17 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
         <div style="color:var(--ts);font-size:12px">Carregando...</div>
       </div>
     </div>
-    <div class="cd" style="flex:2">
+    <div class="cd" style="flex:1.4">
       <div class="cdt">Últimos Resultados</div>
       <div class="cds">Jogos realizados na temporada</div>
       <div id="ultimos-resultados" style="margin-top:12px">
+        <div style="color:var(--ts);font-size:12px">Carregando...</div>
+      </div>
+    </div>
+    <div class="cd" style="flex:1">
+      <div class="cdt">Principais Ocorrências</div>
+      <div class="cds">Lesões por mês · temporada atual</div>
+      <div id="dash-ocorrencias" class="tl" style="margin-top:12px">
         <div style="color:var(--ts);font-size:12px">Carregando...</div>
       </div>
     </div>
@@ -679,68 +721,7 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
   <div id="prog-lista" style="display:none"></div>
 </section>
 
-<section id="relatorio">
-  <div class="sh rv">
-    <div>
-      <div class="stag">Análise Final</div>
-      <div class="sti">Relatório da Temporada</div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Temporada</span>
-      <select id="temp-select" onchange="filtrarTemporada(this.value)" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:7px 14px;border-radius:3px;cursor:pointer;background:var(--c2);color:var(--wh);border:1px solid rgba(70,162,247,.3);outline:none;appearance:none;-webkit-appearance:none;padding-right:28px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2346a2f7' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center">
-        <option value="2025-2026">2025-26</option>
-        <option value="2024-2025">2024-25</option>
-        <option value="2023-2024">2023-24</option>
-        <option value="todas">Todas</option>
-      </select>
-      <span id="rel-periodo-label" style="font-size:11px;color:var(--ts)">Paulista A2 · Nov 2025 – Mar 2026</span>
-    </div>
-  </div>
-  <div class="ri rv">
-    <div class="gi"><div class="giv" style="color:var(--gr)" id="rel-disp">—</div><div class="gil">Disponibilidade</div></div>
-    <div class="gi"><div class="giv"id="rel-rts">—</div><div class="gil">Dias Médios RTS</div></div>
-    <div class="gi"><div class="giv" style="color:var(--gr)" id="rel-recidiva">—</div><div class="gil">Recidiva</div></div>
-    <div class="gi"><div class="giv" style="color:var(--re)" id="rel-lesoes">—</div><div class="gil">Lesões Totais</div></div>
-    <div class="gi"><div class="giv" style="color:var(--re)" id="rel-dias">—</div><div class="gil">Dias Perdidos</div></div>
-    <div class="gi"><div class="giv" style="color:var(--ye)" id="rel-rehab">—</div><div class="gil">Em Rehab Atual</div></div>
-  </div>
-  <div class="rg rv">
-    <div>
-      <div class="rst">Top Lesões por Região</div>
-      <div class="lrank">
-        <div class="litem"><div class="lnum">01</div><div class="li2"><div class="lnome">Adutores (26,6%)</div><div class="ltr"><div class="lfi" style="width:100%;background:#46a2f7"></div></div></div><div class="lcnt">4</div></div>
-        <div class="litem"><div class="lnum">02</div><div class="li2"><div class="lnome">Tornozelo</div><div class="ltr"><div class="lfi" style="width:75%;background:#2ecc8e"></div></div></div><div class="lcnt">3</div></div>
-        <div class="litem"><div class="lnum">03</div><div class="li2"><div class="lnome">Isquiotibiais</div><div class="ltr"><div class="lfi" style="width:50%;background:#f59e0b"></div></div></div><div class="lcnt">2</div></div>
-        <div class="litem"><div class="lnum">04</div><div class="li2"><div class="lnome">Joelho / Outros</div><div class="ltr"><div class="lfi" style="width:50%;background:#ef4444"></div></div></div><div class="lcnt">6</div></div>
-      </div>
-      <div style="margin-top:28px">
-        <div class="rst">Evolução da Disponibilidade</div>
-        <div class="hb2">
-          <div class="hr"><div class="hl2" style="width:48px">Nov</div><div class="ht2"><div class="hf" style="width:68%;background:linear-gradient(90deg,#7a9bb5,#46a2f7)"></div></div><div class="hv">68%</div></div>
-          <div class="hr"><div class="hl2" style="width:48px">Dez</div><div class="ht2"><div class="hf" style="width:85%;background:linear-gradient(90deg,#46a2f7,#1a6fa8)"></div></div><div class="hv">85%</div></div>
-          <div class="hr"><div class="hl2" style="width:48px">Jan</div><div class="ht2"><div class="hf" style="width:93%;background:linear-gradient(90deg,#2ecc8e,#16a34a)"></div></div><div class="hv" style="color:#4ade80">93%</div></div>
-          <div class="hr"><div class="hl2" style="width:48px">Fev</div><div class="ht2"><div class="hf" style="width:89.6%;background:linear-gradient(90deg,#46a2f7,#1a6fa8)"></div></div><div class="hv">89,6%</div></div>
-          <div class="hr"><div class="hl2" style="width:48px">Mar</div><div class="ht2"><div class="hf" style="width:82.7%;background:linear-gradient(90deg,#f59e0b,#d97706)"></div></div><div class="hv" style="color:#fbbf24">82,7%</div></div>
-        </div>
-      </div>
-    </div>
-    <div>
-      <div class="rst">Principais Ocorrências</div>
-      <div class="tl">
-        <div class="ti"><div class="tdot" style="background:var(--re)"></div><div><div class="tdt">Fevereiro 2026</div><div class="ttx">Pico de lesões musculares</div><div class="tde">3 lesões de adutor em sequência — risco de sobrecarga identificado</div></div></div>
-        <div class="ti"><div class="tdot" style="background:var(--ye)"></div><div><div class="tdt">Janeiro 2026</div><div class="ttx">Pico de disponibilidade — 93%</div><div class="tde">Melhor momento da temporada</div></div></div>
-        <div class="ti"><div class="tdot"></div><div><div class="tdt">Março 2026</div><div class="ttx">Queda para 82,7% de disponibilidade</div><div class="tde">4 atletas em reabilitação simultânea</div></div></div>
-        <div class="ti"><div class="tdot" style="background:var(--gr)"></div><div><div class="tdt">Temporada toda</div><div class="ttx">Zero recidivas registradas</div><div class="tde">Protocolo RTS eficiente validado</div></div></div>
-      </div>
-      <div style="margin-top:24px">
-        <div class="rst">Prioridades Próxima Temporada</div>
-        <div class="ac warn"><div class="ai" style="color:var(--re)">⚠</div><div><div class="at">Prevenção lesões de adutor</div><div class="ad">Fortalecimento inguinal — 4 casos (26,6%)</div></div></div>
-        <div class="ac info"><div class="ai" style="color:var(--ye)">→</div><div><div class="at">Monitoramento de carga no pré-temporada</div><div class="ad">ACWR e PSE diários nos primeiros 30 dias</div></div></div>
-        <div class="ac ok"><div class="ai" style="color:var(--gr)">✓</div><div><div class="at">Manter protocolo RTS atual</div><div class="ad">0% de recidiva valida a metodologia</div></div></div>
-      </div>
-    </div>
-  </div>
-</section>
+
 
 <footer style="justify-content:center;padding:24px">
   <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;color:var(--ts)">OZ <span style="color:var(--az)">HUB</span></div>
@@ -1298,6 +1279,100 @@ async function sync(){
       '</div>';
     }).join('');
     setHtml('dash-regioes', regHtml || '<div style="color:var(--ts);font-size:12px">Sem dados</div>');
+  }
+
+  // ── EVOLUÇÃO MENSAL DA DISPONIBILIDADE ────────────
+  var mNomesD = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var mesesEvol = {};
+  preData.forEach(function(r){
+    var d = r['Carimbo de data/hora']||'';
+    var parts = d.split('/');
+    if(parts.length < 2) return;
+    var mesIdx = parseInt(parts[1]) - 1;
+    var anoStr = parts[2] ? parts[2].split(' ')[0] : '';
+    if(!anoStr) return;
+    // Filtra pela temporada selecionada
+    var dt = new Date(parseInt(anoStr), mesIdx, 1);
+    if(!window._tempTodas && (dt < window._tempInicio || dt > window._tempFim)) return;
+    var key = mNomesD[mesIdx]+'/'+anoStr;
+    if(!mesesEvol[key]) mesesEvol[key] = {total:0, bons:0, mesIdx:mesIdx, ano:parseInt(anoStr)};
+    mesesEvol[key].total++;
+    var qt = parseFloat(r['Qualidade Total de Recuperação']||r['Qualidade Total de Recu']||0);
+    if(qt >= 14) mesesEvol[key].bons++;
+  });
+
+  var evolOrdenada = Object.entries(mesesEvol)
+    .sort(function(a,b){
+      if(a[1].ano !== b[1].ano) return a[1].ano - b[1].ano;
+      return a[1].mesIdx - b[1].mesIdx;
+    });
+
+  var cores = ['#7a9bb5','#46a2f7','#2ecc8e','#46a2f7','#f59e0b'];
+  var evolHtml = evolOrdenada.map(function(entry, i){
+    var key = entry[0], dados = entry[1];
+    var pct = dados.total > 0 ? Math.round((dados.bons/dados.total)*100) : 0;
+    var cor = pct >= 80 ? '#2ecc8e' : pct >= 60 ? '#46a2f7' : '#f59e0b';
+    var label = key.split('/')[0];
+    return '<div class="hr">'+
+      '<div class="hl2" style="min-width:32px;font-size:10px">'+label+'</div>'+
+      '<div class="ht2"><div class="hf" style="width:'+pct+'%;background:'+cor+'"></div></div>'+
+      '<div class="hv">'+pct+'%</div>'+
+    '</div>';
+  }).join('');
+  setHtml('dash-evolucao', evolHtml || '<div style="color:var(--ts);font-size:12px">Sem dados</div>');
+
+  // ── INDICADORES CLÍNICOS ─────────────────────────
+  if(totalLes > 0){
+    var diasT = lesoes.reduce(function(s,r){
+      var v = parseFloat(r['Dias DM']||0)||0;
+      return s + (v > 0 && v < 500 ? v : 0);
+    },0);
+    var rtpValsD = lesoes.map(function(r){return parseInt(r['RTP']||0)||0;}).filter(function(v){return v>0&&v<500;});
+    var rtpMedioD = rtpValsD.length>0 ? Math.round(rtpValsD.reduce(function(a,b){return a+b;},0)/rtpValsD.length) : '—';
+    var recidivasD = lesoes.filter(function(r){var v=(r['Reicidente']||'').toLowerCase();return v==='sim'||v==='s';}).length;
+    var recPctD = Math.round((recidivasD/totalLes)*100)+'%';
+    set('dash-rts', rtpMedioD+(rtpMedioD!=='—'?' dias':''));
+    set('dash-dias', diasT);
+    set('dash-recidiva', recPctD);
+  }
+
+  // ── PRINCIPAIS OCORRÊNCIAS ───────────────────────
+  if(totalLes > 0){
+    var porMesDash = {};
+    var mesesOrdemD = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+    lesoes.forEach(function(r){
+      var mes = (r['Mês']||r['Mes']||'').trim().toUpperCase();
+      var ano = (r['Ano']||'').trim();
+      if(!mes || mesesOrdemD.indexOf(mes) < 0) return;
+      if(!ano || parseInt(ano) < 2020 || parseInt(ano) > 2030) return;
+      var key = mes+' '+ano;
+      if(!porMesDash[key]) porMesDash[key] = {total:0, diagnosticos:[], mesIdx: mesesOrdemD.indexOf(mes), ano: parseInt(ano)};
+      porMesDash[key].total++;
+      var diag = (r['Diagnóstico / Queixas']||'').trim();
+      if(diag && diag !== '0' && diag !== '-') porMesDash[key].diagnosticos.push(diag);
+    });
+
+    var ocordsD = Object.entries(porMesDash)
+      .sort(function(a,b){
+        if(a[1].ano !== b[1].ano) return a[1].ano - b[1].ano;
+        return a[1].mesIdx - b[1].mesIdx;
+      }).slice(-4);
+
+    var coresDash = ['var(--re)','var(--ye)','var(--az)','var(--gr)'];
+    var ocHtmlD = ocordsD.map(function(entry, i){
+      var mes = entry[0], dados = entry[1];
+      var uniq = dados.diagnosticos.filter(function(v,idx,arr){return arr.indexOf(v)===idx;});
+      var desc = uniq.length > 0 ? uniq.slice(0,2).join(', ') : 'Registros do mês';
+      return '<div class="ti">'+
+        '<div class="tdot" style="background:'+coresDash[i]+'"></div>'+
+        '<div>'+
+          '<div class="tdt">'+mes+'</div>'+
+          '<div class="ttx">'+dados.total+' lesão(ões)</div>'+
+          '<div class="tde">'+desc+'</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+    setHtml('dash-ocorrencias', ocHtmlD || '<div style="color:var(--ts);font-size:12px">Sem ocorrências</div>');
   }
 
   // ── TIMESTAMP ────────────────────────────────────
@@ -4570,6 +4645,41 @@ function filtrarTemporada(t) {
   _relatorioCarregado = false;
   carregarRelatorio();
 }
+
+function filtrarDashboard(t) {
+  // Sincroniza com o mesmo sistema de filtro de temporada
+  _temporadaAtual = t;
+  var anos = t !== 'todas' ? t.split('-') : null;
+  if(anos){
+    window._tempInicio = new Date(parseInt(anos[0]), 10, 1);
+    window._tempFim    = new Date(parseInt(anos[1]),  9, 31);
+    window._tempTodas  = false;
+  } else {
+    window._tempTodas = true;
+  }
+  // Sincroniza dropdown do relatório
+  var relSel = document.getElementById('temp-select');
+  if(relSel) relSel.value = t;
+  // Recarrega dashboard
+  sync().catch(console.warn);
+}
+
+// Inicializa dropdown do dashboard com temporada detectada
+document.addEventListener('DOMContentLoaded', function(){
+  var sel = document.getElementById('dash-temp-select');
+  if(sel){
+    var t = detectarTemporadaAtual ? detectarTemporadaAtual() : '2025-2026';
+    var exists = Array.from(sel.options).some(function(o){return o.value===t;});
+    if(!exists){
+      var opt = document.createElement('option');
+      opt.value = t;
+      var a = t.split('-');
+      opt.text = a[0].slice(2)+'-'+a[1].slice(2);
+      sel.insertBefore(opt, sel.firstChild);
+    }
+    sel.value = t;
+  }
+});
 </script>
 
 
