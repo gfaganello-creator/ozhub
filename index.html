@@ -510,48 +510,43 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
   </nav>
 </header>
 
-<div class="sbar">
-  <div class="si"><div class="sd lv"></div><div class="si-body"><span class="sv g" id="st-disp">—</span><span class="sl">Disponibilidade</span></div></div>
-  <div class="si"><div class="sd wn"></div><div class="si-body"><span class="sv y" id="st-rehab">—</span><span class="sl">Em Rehab</span></div></div>
-  <div class="si"><div class="sd er"></div><div class="si-body"><span class="sv r" id="st-les">—</span><span class="sl">Lesões Ativas</span></div></div>
-  <div class="si"><div class="sd lv"></div><div class="si-body"><span class="sv g" id="st-apto">—</span><span class="sl">Plantel Apto</span></div></div>
 
-<div class="ssync"><span class="spin">↻</span><span id="st-sync">Sincronizando...</span></div>
-</div>
 
 
 
 <section id="dashboard">
   <div class="sh rv">
     <div><div class="stag">Monitoramento</div><div class="sti">Dashboard</div></div>
-    <div class="sme" id="dash-ts">Conectando...</div>
-  </div>
-
-  <!-- KPIs PRINCIPAIS -->
-  <div class="kg rv">
-    <div class="k">
-      <div class="kl">Disponibilidade Hoje</div>
-      <div class="kv g" id="kv-disp">—<span class="ku">%</span></div>
-      <div class="kt n" id="kv-disp-sub">carregando...</div>
-    </div>
-    <div class="k">
-      <div class="kl">Plantel Apto</div>
-      <div class="kv g" id="kv-apto">—</div>
-      <div class="kt n" id="kv-apto-sub">carregando...</div>
-    </div>
-    <div class="k">
-      <div class="kl">Lesões na Temporada</div>
-      <div class="kv r" id="kv-les">—</div>
-      <div class="kt n" id="kv-les-sub">carregando...</div>
-    </div>
-    <div class="k">
-      <div class="kl">Próximo Jogo</div>
-      <div class="kv" id="kv-prox-jogo" style="font-size:18px">—</div>
-      <div class="kt n" id="kv-prox-sub">carregando...</div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="sme" id="dash-ts">Conectando...</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts)">
+        <span class="spin" id="dash-spin" style="display:none">↻</span>
+        <span id="st-sync"></span>
+      </div>
     </div>
   </div>
 
-  <!-- LINHA 2: Rehab + Lesões por Região -->
+  <!-- KPIs -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
+    <div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:4px;padding:16px 20px">
+      <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">Disponibilidade</div>
+      <div style="font-family:Bebas Neue,sans-serif;font-size:36px;color:var(--gr)" id="st-disp">—</div>
+    </div>
+    <div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:4px;padding:16px 20px">
+      <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">Em Rehab</div>
+      <div style="font-family:Bebas Neue,sans-serif;font-size:36px;color:var(--ye)" id="st-rehab">—</div>
+    </div>
+    <div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:4px;padding:16px 20px">
+      <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">Lesões na Temporada</div>
+      <div style="font-family:Bebas Neue,sans-serif;font-size:36px;color:var(--re)" id="st-les">—</div>
+    </div>
+    <div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:4px;padding:16px 20px">
+      <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">Plantel Apto</div>
+      <div style="font-family:Bebas Neue,sans-serif;font-size:36px;color:var(--gr)" id="st-apto">—</div>
+    </div>
+  </div>
+
+  <!-- LINHA 1: Rehab + Regiões + Tipos -->
   <div class="cr rv">
     <div class="cd" style="flex:1.2">
       <div class="cdt">Atletas em Reabilitação</div>
@@ -571,7 +566,7 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
       <div class="cdt">Lesões por Tipo</div>
       <div class="cds">Distribuição por categoria · temporada</div>
       <div class="dw" style="margin-top:12px">
-        <svg width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0" id="dash-donut-svg">
+        <svg width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0">
           <circle cx="55" cy="55" r="42" fill="none" stroke="#1c2a38" stroke-width="16"/>
           <circle cx="55" cy="55" r="42" fill="none" stroke="#46a2f7" stroke-width="16" stroke-dasharray="0 264" stroke-dashoffset="66" id="dd-musc"/>
           <circle cx="55" cy="55" r="42" fill="none" stroke="#2ecc8e" stroke-width="16" stroke-dasharray="0 264" stroke-dashoffset="0" id="dd-arti"/>
@@ -580,12 +575,30 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
           <text x="55" y="50" text-anchor="middle" font-family="Bebas Neue,sans-serif" font-size="20" fill="#f0f4f8" id="donut-n">—</text>
           <text x="55" y="63" text-anchor="middle" font-size="8" fill="#7a9bb5" font-family="Barlow Condensed,sans-serif" letter-spacing="1">LESÕES</text>
         </svg>
-        <div style="flex:1" id="dash-donut-legend">
+        <div style="flex:1">
           <div class="li"><div class="ld" style="background:#46a2f7"></div><div class="ll">Musculares</div><div class="lv" id="d-musc">—</div></div>
           <div class="li"><div class="ld" style="background:#2ecc8e"></div><div class="ll">Articulares</div><div class="lv" id="d-arti">—</div></div>
           <div class="li"><div class="ld" style="background:#f59e0b"></div><div class="ll">Óssea/Tendão</div><div class="lv" id="d-ossea">—</div></div>
           <div class="li"><div class="ld" style="background:#2a3f52;border:1px solid #46a2f7"></div><div class="ll">Outras</div><div class="lv" id="d-outras">—</div></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINHA 2: Próximo Jogo + Últimos Resultados -->
+  <div class="cr rv" style="margin-top:0">
+    <div class="cd" style="flex:0.8">
+      <div class="cdt">Próximo Jogo</div>
+      <div class="cds" id="prox-jogo-sub">carregando...</div>
+      <div id="prox-jogo-card" style="margin-top:16px">
+        <div style="color:var(--ts);font-size:12px">Carregando...</div>
+      </div>
+    </div>
+    <div class="cd" style="flex:2">
+      <div class="cdt">Últimos Resultados</div>
+      <div class="cds">Jogos realizados na temporada</div>
+      <div id="ultimos-resultados" style="margin-top:12px">
+        <div style="color:var(--ts);font-size:12px">Carregando...</div>
       </div>
     </div>
   </div>
@@ -1084,11 +1097,9 @@ async function sync(){
   }).length;
   var pctDisp = totalAtletas > 0 ? Math.round((aptos/totalAtletas)*100) : 0;
 
+  // Status bar
   setHtml('st-disp', pctDisp+'%');
-  setHtml('kv-disp', pctDisp+'<span class="ku">%</span>');
-  set('kv-disp-sub', aptos+' aptos de '+totalAtletas+' atletas');
-  set('kv-apto', aptos);
-  set('kv-apto-sub', naoAptos > 0 ? naoAptos+' em reab/transição' : 'Plantel 100% disponível');
+  setHtml('st-disp', pctDisp+'%');
   set('st-apto', aptos);
   set('st-rehab', naoAptos);
 
@@ -1113,28 +1124,103 @@ async function sync(){
     set('rehab-sub', 'status atual · BD Recuperação e Prontidão');
   }
 
-  // ── PRÓXIMO JOGO ────────────────────────────────
+  // ── PRÓXIMO JOGO + ÚLTIMOS RESULTADOS ────────────
   if(jogosData && jogosData.length > 0){
     var hoje = new Date();
     var proxJogo = null;
+    var jogosRealizados = [];
+
     jogosData.forEach(function(j){
       var dataStr = j['Data']||j['DATA']||'';
       if(!dataStr) return;
       var p = dataStr.split('/');
       if(p.length < 3) return;
       var dt = new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
-      if(dt >= hoje && (!proxJogo || dt < proxJogo.dt)){
-        proxJogo = {dt:dt, jogo:j};
+      var temResultado = (j['Gols Casa']||j['GolsCasa']||j['Resultado']||'').trim() !== '';
+      if(dt >= hoje && !temResultado){
+        if(!proxJogo || dt < proxJogo.dt) proxJogo = {dt:dt, jogo:j};
+      } else if(dt < hoje || temResultado){
+        jogosRealizados.push({dt:dt, jogo:j});
       }
     });
+
+    // Próximo Jogo
     if(proxJogo){
       var j = proxJogo.jogo;
-      var adv = j['Adversário']||j['Adversario']||j['ADVERSÁRIO']||'—';
-      var dias = Math.ceil((proxJogo.dt - hoje)/(1000*60*60*24));
-      var dtFmt = proxJogo.dt.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
-      set('kv-prox-jogo', adv);
-      set('kv-prox-sub', dtFmt + (dias===0?' · Hoje':dias===1?' · Amanhã':' · em '+dias+'d'));
-      set('st-les', adv);
+      var adv   = j['Adversário']||j['Adversario']||j['Time Adversário']||'—';
+      var local = j['Local']||j['Mando']||'';
+      var categ = j['Categoria']||j['Competição']||j['Competicao']||'';
+      var dias  = Math.ceil((proxJogo.dt - hoje)/(1000*60*60*24));
+      var dtFmt = proxJogo.dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
+      var diasLabel = dias===0?'<span style="color:var(--re);font-weight:700">HOJE</span>':
+                      dias===1?'<span style="color:var(--ye)">Amanhã</span>':
+                      '<span style="color:var(--ts)">em '+dias+' dias</span>';
+
+      setHtml('prox-jogo-sub', dtFmt);
+      setHtml('prox-jogo-card',
+        '<div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">'+
+          '<div style="display:flex;align-items:center;justify-content:space-between">'+
+            '<div>'+
+              '<div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--wh);letter-spacing:1px">'+adv+'</div>'+
+              (categ?'<div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-top:2px">'+categ+'</div>':'') +
+              (local?'<div style="font-size:11px;color:var(--ts);margin-top:4px">📍 '+local+'</div>':'') +
+            '</div>'+
+            '<div style="text-align:right">'+diasLabel+'</div>'+
+          '</div>'+
+        '</div>'
+      );
+    } else {
+      setHtml('prox-jogo-card','<div style="color:var(--ts);font-size:12px">Nenhum jogo agendado</div>');
+      set('prox-jogo-sub','—');
+    }
+
+    // Últimos Resultados (últimos 5)
+    jogosRealizados.sort(function(a,b){return b.dt-a.dt;});
+    var ultimos = jogosRealizados.slice(0,5);
+    if(ultimos.length > 0){
+      var resHtml = '<div style="display:flex;flex-direction:column;gap:6px">';
+      ultimos.forEach(function(item){
+        var j = item.jogo;
+        var adv = j['Adversário']||j['Adversario']||j['Time Adversário']||'—';
+        var res = j['Resultado']||j['Placar']||j['Gols Casa']||'';
+        var dtFmt2 = item.dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+        var categ = j['Categoria']||j['Competição']||'';
+        // Determina V/E/D
+        var badge = '';
+        if(res){
+          var nums = res.match(/\d+/g);
+          if(nums && nums.length >= 2){
+            var g1=parseInt(nums[0]),g2=parseInt(nums[1]);
+            var mando = (j['Mando']||j['Local']||'').toLowerCase();
+            var ehCasa = mando.indexOf('casa')>=0||mando.indexOf('mandante')>=0||mando==='' ;
+            var venceu = ehCasa ? g1>g2 : g2>g1;
+            var empate = g1===g2;
+            badge = empate ?
+              '<span style="background:rgba(245,158,11,.15);color:var(--ye);border:1px solid rgba(245,158,11,.3);font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:2px">E</span>' :
+              venceu ?
+              '<span style="background:rgba(46,204,142,.15);color:var(--gr);border:1px solid rgba(46,204,142,.3);font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:2px">V</span>' :
+              '<span style="background:rgba(239,68,68,.15);color:var(--re);border:1px solid rgba(239,68,68,.3);font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:2px">D</span>';
+          }
+        }
+        resHtml +=
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--c2);border:1px solid rgba(70,162,247,.06);border-radius:3px">'+
+            '<div style="display:flex;align-items:center;gap:10px">'+
+              badge+
+              '<div>'+
+                '<div style="font-size:13px;font-weight:600;color:var(--wh)">'+adv+'</div>'+
+                (categ?'<div style="font-size:10px;color:var(--ts)">'+categ+'</div>':'')+
+              '</div>'+
+            '</div>'+
+            '<div style="display:flex;align-items:center;gap:12px">'+
+              (res?'<div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--wh);letter-spacing:2px">'+res+'</div>':'')+
+              '<div style="font-size:11px;color:var(--ts)">'+dtFmt2+'</div>'+
+            '</div>'+
+          '</div>';
+      });
+      resHtml += '</div>';
+      setHtml('ultimos-resultados', resHtml);
+    } else {
+      setHtml('ultimos-resultados','<div style="color:var(--ts);font-size:12px">Nenhum resultado registrado</div>');
     }
   }
 
@@ -1158,6 +1244,7 @@ async function sync(){
 
   var totalLes = lesoes.length;
   set('kv-les', totalLes || '—');
+  set('st-les', totalLes || '—');
 
   if(totalLes > 0){
     // Tipos
