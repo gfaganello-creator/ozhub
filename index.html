@@ -685,11 +685,12 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Temporada</span>
-      <div id="temp-filters" style="display:flex;gap:6px">
-        <button onclick="filtrarTemporada('2025-2026')" id="tf-2025-2026" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:3px;cursor:pointer;background:var(--az);color:var(--bk);border:none;transition:.2s">2025-26</button>
-        <button onclick="filtrarTemporada('2024-2025')" id="tf-2024-2025" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:3px;cursor:pointer;background:transparent;color:var(--ts);border:1px solid rgba(70,162,247,.2);transition:.2s">2024-25</button>
-        <button onclick="filtrarTemporada('todas')" id="tf-todas" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:3px;cursor:pointer;background:transparent;color:var(--ts);border:1px solid rgba(70,162,247,.2);transition:.2s">Todas</button>
-      </div>
+      <select id="temp-select" onchange="filtrarTemporada(this.value)" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:7px 14px;border-radius:3px;cursor:pointer;background:var(--c2);color:var(--wh);border:1px solid rgba(70,162,247,.3);outline:none;appearance:none;-webkit-appearance:none;padding-right:28px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2346a2f7' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center">
+        <option value="2025-2026">2025-26</option>
+        <option value="2024-2025">2024-25</option>
+        <option value="2023-2024">2023-24</option>
+        <option value="todas">Todas</option>
+      </select>
       <span id="rel-periodo-label" style="font-size:11px;color:var(--ts)">Paulista A2 · Nov 2025 – Mar 2026</span>
     </div>
   </div>
@@ -4307,48 +4308,73 @@ document.addEventListener('DOMContentLoaded', function(){
 // ══════════════════════════════════════
 // FILTRO DE TEMPORADA
 // ══════════════════════════════════════
-var _temporadaAtual = '2025-2026';
-window._tempInicio = new Date(2025, 10, 1);
-window._tempFim    = new Date(2026,  2, 31);
-window._tempTodas  = false;
+// Auto-detecta temporada atual baseado na data de hoje
+function detectarTemporadaAtual() {
+  var hoje = new Date();
+  var ano  = hoje.getFullYear();
+  var mes  = hoje.getMonth(); // 0=Jan, 10=Nov
+  // Temporada começa em Novembro (mes 10) — se antes de Nov, ainda é temporada anterior
+  if(mes >= 10) {
+    return ano + '-' + (ano+1);       // ex: Nov 2026 → "2026-2027"
+  } else {
+    return (ano-1) + '-' + ano;       // ex: Mar 2026 → "2025-2026"
+  }
+}
+
+var _temporadaAtual = detectarTemporadaAtual();
+
+// Configura período inicial baseado na temporada detectada
+(function(){
+  var t = _temporadaAtual;
+  var anos = t !== 'todas' ? t.split('-') : null;
+  if(anos){
+    window._tempInicio = new Date(parseInt(anos[0]), 10, 1);  // 1 Nov ano inicial
+    window._tempFim    = new Date(parseInt(anos[1]),  9, 31); // 31 Out ano final
+  }
+  window._tempTodas = false;
+  // Atualiza dropdown ao carregar
+  document.addEventListener('DOMContentLoaded', function(){
+    var sel = document.getElementById('temp-select');
+    if(sel) {
+      // Adiciona opção da temporada atual se não existir
+      var exists = Array.from(sel.options).some(function(o){ return o.value === t; });
+      if(!exists) {
+        var opt = document.createElement('option');
+        opt.value = t;
+        var anos2 = t.split('-');
+        opt.text = anos2[0].slice(2) + '-' + anos2[1].slice(2); // ex: "25-26"
+        sel.insertBefore(opt, sel.firstChild);
+      }
+      sel.value = t;
+    }
+  });
+})();
 
 function filtrarTemporada(t) {
   _temporadaAtual = t;
 
-  // Configura período
-  if(t === '2025-2026'){
-    window._tempInicio = new Date(2025, 10, 1);
-    window._tempFim    = new Date(2026,  2, 31);
-    window._tempTodas  = false;
-    var label = 'Paulista A2 · Nov 2025 – Mar 2026';
-  } else if(t === '2024-2025'){
-    window._tempInicio = new Date(2024, 10, 1);
-    window._tempFim    = new Date(2025,  9, 31);
-    window._tempTodas  = false;
-    var label = 'Temporada 2024-25 · Nov 2024 – Out 2025';
-  } else {
+  // Configura período dinamicamente
+  var label;
+  if(t === 'todas'){
     window._tempTodas = true;
-    var label = 'Todas as temporadas';
+    label = 'Todas as temporadas';
+  } else {
+    var anos = t.split('-');
+    var anoIni = parseInt(anos[0]);
+    var anoFim = parseInt(anos[1]);
+    window._tempInicio = new Date(anoIni, 10, 1);  // 1 Nov
+    window._tempFim    = new Date(anoFim,  9, 31); // 31 Out
+    window._tempTodas  = false;
+    label = 'Temporada ' + anoIni + '-' + String(anoFim).slice(2) + ' · Nov ' + anoIni + ' – Out ' + anoFim;
   }
 
   // Atualiza label
   var lbl = document.getElementById('rel-periodo-label');
   if(lbl) lbl.textContent = label;
 
-  // Atualiza botões
-  ['2025-2026','2024-2025','todas'].forEach(function(id){
-    var btn = document.getElementById('tf-'+id);
-    if(!btn) return;
-    if(id === t){
-      btn.style.background = 'var(--az)';
-      btn.style.color = 'var(--bk)';
-      btn.style.border = 'none';
-    } else {
-      btn.style.background = 'transparent';
-      btn.style.color = 'var(--ts)';
-      btn.style.border = '1px solid rgba(70,162,247,.2)';
-    }
-  });
+  // Atualiza dropdown
+  var sel = document.getElementById('temp-select');
+  if(sel) sel.value = t;
 
   // Recarrega relatório com novo filtro
   _relatorioCarregado = false;
