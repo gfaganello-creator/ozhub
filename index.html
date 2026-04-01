@@ -4156,18 +4156,28 @@ async function carregarRelatorio() {
 
   // ── LESÕES ───────────────────────────────────────
   if(lesData && lesData.length > 0){
-    // Filtra só linhas reais — Nome Completo com espaço (nome sobrenome) E Ano entre 2020-2030
+    // Filtra temporada atual: Nov 2025 – Mar 2026
+    // e só linhas reais (nome completo + diagnóstico válidos)
+    var TEMP_INICIO = new Date(2025, 10, 1); // 01/11/2025
+    var TEMP_FIM    = new Date(2026,  2, 31); // 31/03/2026
+
     var lesoes = lesData.filter(function(r){
       var nome = (r['Nome Completo']||'').trim();
-      var ano  = (r['Ano']||'').trim();
       var diag = (r['Diagnóstico / Queixas']||'').trim();
-      // Nome real tem pelo menos um espaço (nome + sobrenome) e não é número
+      var data = (r['Data de Entrada']||'').trim();
+
+      // Nome real: tem espaço e não é só números
       var nomeOk = nome.length > 5 && nome.indexOf(' ') > 0 && !/^[\d\s]+$/.test(nome);
-      // Ano deve ser 4 dígitos entre 2020 e 2030
-      var anoOk  = /^20[2-3]\d$/.test(ano);
-      // Diagnóstico não pode ser vazio ou zero
+      // Diagnóstico não vazio
       var diagOk = diag.length > 2 && diag !== '0';
-      return nomeOk && anoOk && diagOk;
+      // Data dentro da temporada (dd/mm/aaaa)
+      var dataOk = false;
+      if(/^\d{2}\/\d{2}\/\d{4}$/.test(data)){
+        var p = data.split('/');
+        var dt = new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+        dataOk = dt >= TEMP_INICIO && dt <= TEMP_FIM;
+      }
+      return nomeOk && diagOk && dataOk;
     });
     var total = lesoes.length;
     if(total === 0) return;
