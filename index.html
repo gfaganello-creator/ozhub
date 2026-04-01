@@ -1070,10 +1070,19 @@ async function sync(){
     var car  = r['Característica']||r['Caracteristica']||'';
     if(nome) aptMap[nome] = car;
   });
-  var totalAtletas = cadastro.filter(function(r){return r['Nome']&&r['Nome'].trim();}).length || Object.keys(aptMap).length;
-  var aptos   = Object.values(aptMap).filter(function(v){return v.toLowerCase().indexOf('apronto')>=0;}).length;
-  var naoAptos = Object.keys(aptMap).length - aptos;
-  var pctDisp  = totalAtletas > 0 ? Math.round((aptos/totalAtletas)*100) : 0;
+  // Usa cadastro como fonte de total — filtra atletas ativos com nome válido
+  var atletasCadastro = cadastro.filter(function(r){return r['Nome']&&r['Nome'].trim().length>2;});
+  var totalAtletas = atletasCadastro.length || Object.keys(aptMap).length;
+  // Conta aptos apenas entre atletas do cadastro
+  var aptos = atletasCadastro.filter(function(r){
+    var car = aptMap[r['Nome']]||'';
+    return car.toLowerCase().indexOf('apronto')>=0;
+  }).length;
+  var naoAptos = atletasCadastro.filter(function(r){
+    var car = aptMap[r['Nome']]||'';
+    return car && car.toLowerCase().indexOf('apronto')<0;
+  }).length;
+  var pctDisp = totalAtletas > 0 ? Math.round((aptos/totalAtletas)*100) : 0;
 
   setHtml('st-disp', pctDisp+'%');
   setHtml('kv-disp', pctDisp+'<span class="ku">%</span>');
