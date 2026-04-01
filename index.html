@@ -4156,24 +4156,19 @@ async function carregarRelatorio() {
 
   // ── LESÕES ───────────────────────────────────────
   if(lesData && lesData.length > 0){
-    // DEBUG — loga primeiras linhas para ver formato real
-    console.log('lesData total bruto:', lesData.length);
-    console.log('Colunas:', Object.keys(lesData[0]||{}));
-    console.log('Linha 1:', JSON.stringify(lesData[0]));
-    console.log('Linha 2:', JSON.stringify(lesData[1]));
-    console.log('Linha 10:', JSON.stringify(lesData[9]));
-    console.log('Linha 20:', JSON.stringify(lesData[19]));
-
-    // Filtra só linhas com data válida (dd/mm/aaaa) — exclui linhas vazias e zeros
+    // Filtra só linhas reais — Nome Completo com espaço (nome sobrenome) E Ano entre 2020-2030
     var lesoes = lesData.filter(function(r){
-      var nome = r['Nome Completo']||'';
-      var data = r['Data de Entrada']||r['Data Entrada']||'';
-      var dataOk = /\d{2}\/\d{2}\/\d{4}/.test(data);
-      var nomeOk = nome.trim().length > 3 && nome !== '0' && !/^\d+$/.test(nome.trim());
-      return dataOk && nomeOk;
+      var nome = (r['Nome Completo']||'').trim();
+      var ano  = (r['Ano']||'').trim();
+      var diag = (r['Diagnóstico / Queixas']||'').trim();
+      // Nome real tem pelo menos um espaço (nome + sobrenome) e não é número
+      var nomeOk = nome.length > 5 && nome.indexOf(' ') > 0 && !/^[\d\s]+$/.test(nome);
+      // Ano deve ser 4 dígitos entre 2020 e 2030
+      var anoOk  = /^20[2-3]\d$/.test(ano);
+      // Diagnóstico não pode ser vazio ou zero
+      var diagOk = diag.length > 2 && diag !== '0';
+      return nomeOk && anoOk && diagOk;
     });
-    console.log('lesoes filtradas:', lesoes.length);
-    if(lesoes.length > 0) console.log('Primeira lesao filtrada:', JSON.stringify(lesoes[0]));
     var total = lesoes.length;
     if(total === 0) return;
 
