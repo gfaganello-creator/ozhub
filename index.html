@@ -638,7 +638,7 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
     </div>
     <div class="cd" style="flex:1">
       <div class="cdt">Principais Ocorrências</div>
-      <div class="cds">Lesões por mês · temporada atual</div>
+      <div class="cds">Entradas por atleta · mais recentes primeiro</div>
       <div id="dash-ocorrencias" class="tl" style="margin-top:12px">
         <div style="color:var(--ts);font-size:12px">Carregando...</div>
       </div>
@@ -1342,43 +1342,63 @@ async function sync(){
     set('dash-recidiva', recPctD);
   }
 
-  // ── PRINCIPAIS OCORRÊNCIAS ───────────────────────
+  // ── FEED DE OCORRÊNCIAS — entrada por atleta ───────
   if(totalLes > 0){
-    var porMesDash = {};
-    var mesesOrdemD = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
-    lesoes.forEach(function(r){
-      var mes = (r['Mês']||r['Mes']||'').trim().toUpperCase();
-      var ano = (r['Ano']||'').trim();
-      if(!mes || mesesOrdemD.indexOf(mes) < 0) return;
-      if(!ano || parseInt(ano) < 2020 || parseInt(ano) > 2030) return;
-      var key = mes+' '+ano;
-      if(!porMesDash[key]) porMesDash[key] = {total:0, diagnosticos:[], mesIdx: mesesOrdemD.indexOf(mes), ano: parseInt(ano)};
-      porMesDash[key].total++;
-      var diag = (r['Diagnóstico / Queixas']||'').trim();
-      if(diag && diag !== '0' && diag !== '-') porMesDash[key].diagnosticos.push(diag);
-    });
+    // Ordena por data de entrada (mais recente primeiro)
+    var lesOrdenadas = lesoes.slice().sort(function(a,b){
+      var da = (a['Data de Entrada']||'').split('/');
+      var db = (b['Data de Entrada']||'').split('/');
+      var dtA = da.length===3 ? new Date(parseInt(da[2]),parseInt(da[1])-1,parseInt(da[0])) : new Date(0);
+      var dtB = db.length===3 ? new Date(parseInt(db[2]),parseInt(db[1])-1,parseInt(db[0])) : new Date(0);
+      return dtB - dtA; // mais recente primeiro
+    }).slice(0, 8); // últimas 8
 
-    var ocordsD = Object.entries(porMesDash)
-      .sort(function(a,b){
-        if(a[1].ano !== b[1].ano) return a[1].ano - b[1].ano;
-        return a[1].mesIdx - b[1].mesIdx;
-      }).slice(-4);
+    var ocHtmlD = lesOrdenadas.map(function(r){
+      var nome  = r['Nome Completo']||'—';
+      var diag  = r['Diagnóstico / Queixas']||'—';
+      var tipo  = r['Tipo']||'';
+      var regiao = r['Região']||r['Regiao']||'';
+      var status = (r['Liberado ou Vetado']||'').trim().toUpperCase();
+      var data  = r['Data de Entrada']||'';
+      var rtp   = r['RTP']||'';
+      var mes   = (r['Mês']||r['Mes']||'').trim();
+      var ano   = (r['Ano']||'').trim();
 
-    var coresDash = ['var(--re)','var(--ye)','var(--az)','var(--gr)'];
-    var ocHtmlD = ocordsD.map(function(entry, i){
-      var mes = entry[0], dados = entry[1];
-      var uniq = dados.diagnosticos.filter(function(v,idx,arr){return arr.indexOf(v)===idx;});
-      var desc = uniq.length > 0 ? uniq.slice(0,2).join(', ') : 'Registros do mês';
-      return '<div class="ti">'+
-        '<div class="tdot" style="background:'+coresDash[i]+'"></div>'+
-        '<div>'+
-          '<div class="tdt">'+mes+'</div>'+
-          '<div class="ttx">'+dados.total+' lesão(ões)</div>'+
-          '<div class="tde">'+desc+'</div>'+
+      // Badge de status
+      var isLib  = status === 'LIBERADO';
+      var isVet  = status === 'VETADO';
+      var badgeColor = isLib ? 'var(--gr)' : isVet ? 'var(--re)' : 'var(--ye)';
+      var badgeBg    = isLib ? 'rgba(46,204,142,.12)' : isVet ? 'rgba(239,68,68,.12)' : 'rgba(245,158,11,.12)';
+      var badgeBorder= isLib ? 'rgba(46,204,142,.3)' : isVet ? 'rgba(239,68,68,.3)' : 'rgba(245,158,11,.3)';
+      var badgeLabel = isLib ? '✓ Liberado' : isVet ? '✗ Vetado' : '⏳ Em andamento';
+      var dotColor   = isLib ? 'var(--gr)' : isVet ? 'var(--re)' : 'var(--ye)';
+
+      // Linha de detalhe
+      var detalhes = [];
+      if(tipo) detalhes.push(tipo);
+      if(regiao && regiao !== 'x' && regiao !== '-') detalhes.push(regiao);
+      if(rtp && rtp !== '0' && rtp !== 'x') detalhes.push('RTP: '+rtp);
+      var detalhe = detalhes.join(' · ');
+
+      return '<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(70,162,247,.06)">'+
+        '<div style="width:8px;height:8px;border-radius:50%;background:'+dotColor+';margin-top:5px;flex-shrink:0"></div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'+
+            '<div>'+
+              '<div style="font-size:12px;font-weight:600;color:var(--wh)">'+nome+'</div>'+
+              '<div style="font-size:11px;color:var(--ts);margin-top:1px">'+(mes&&ano?mes+' '+ano:data)+'</div>'+
+            '</div>'+
+            '<span style="font-size:9px;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:2px;white-space:nowrap;background:'+badgeBg+';color:'+badgeColor+';border:1px solid '+badgeBorder+'">'+badgeLabel+'</span>'+
+          '</div>'+
+          '<div style="font-size:11px;color:var(--wh);margin-top:4px">'+diag+'</div>'+
+          (detalhe?'<div style="font-size:10px;color:var(--ts);margin-top:2px">'+detalhe+'</div>':'')+
         '</div>'+
       '</div>';
     }).join('');
+
     setHtml('dash-ocorrencias', ocHtmlD || '<div style="color:var(--ts);font-size:12px">Sem ocorrências</div>');
+    // Atualiza subtitle
+    var subEl = document.querySelector('#dash-ocorrencias')?.previousElementSibling?.previousElementSibling;
   }
 
   // ── TIMESTAMP ────────────────────────────────────
