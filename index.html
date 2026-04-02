@@ -1666,12 +1666,14 @@ function showPerformance() {
   var f=document.querySelector('footer'); if(f) f.style.display='';
 }
 function hubPerformance() {
+  _finAutenticado = false;
   document.getElementById('tela-hub').style.display = 'none';
   document.getElementById('mod-elenco').style.display = 'none';
   showPerformance();
   window.scrollTo(0,0);
 }
 function hubElenco() {
+  _finAutenticado = false;
   document.getElementById('tela-hub').style.display = 'none';
   hidePerformance();
   document.getElementById('mod-elenco').style.display = 'block';
@@ -1679,6 +1681,7 @@ function hubElenco() {
   elCarregar();
 }
 function hubVoltar() {
+  _finAutenticado = false;
   document.getElementById('mod-elenco').style.display = 'none';
   document.getElementById('mod-financeiro').style.display = 'none';
   hidePerformance();
@@ -1749,6 +1752,7 @@ function finAuthToggle() {
   }
 }
 function hubVoltarFin() {
+  _finAutenticado = false;
   document.getElementById('mod-financeiro').style.display = 'none';
   document.getElementById('tela-hub').style.display = 'flex';
   window.scrollTo(0, 0);
@@ -4999,6 +5003,7 @@ var dtState = {
 // ── Navegação ──
 function abrirDepTecnico(e) {
   if(e) e.preventDefault();
+  _finAutenticado = false;
   document.getElementById('tela-hub').style.display = 'none';
   document.getElementById('mod-elenco').style.display = 'none';
   hidePerformance();
@@ -5014,6 +5019,7 @@ function abrirDepTecnico(e) {
   dtCarregar();
 }
 function hubVoltarDT() {
+  _finAutenticado = false;
   document.getElementById('mod-dep-tecnico').style.display = 'none';
   document.getElementById('tela-hub').style.display = 'flex';
   window.scrollTo(0, 0);
