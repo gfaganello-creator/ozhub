@@ -4758,7 +4758,7 @@ document.addEventListener('DOMContentLoaded', function(){
 // ══════════════════════════════════════
 // DEP. TÉCNICO v4 — Central de Análise
 // ══════════════════════════════════════
-var DT_API_KEY = 'live_14e70fe96049615c1c7760495ede62';
+var DT_API_KEY = 'test_7ae1b35cc9b88a4acddb430c4ce3f7';
 var DT_API_BASE = 'https://api.api-futebol.com.br/v1';
 var dtState = {
   campId: null, campNome: '',
@@ -4907,7 +4907,7 @@ async function dtCarregar() {
 
 // Enriquecimento async: busca forma dos times sequencialmente
 async function dtEnriquecerAsync() {
-  // Coletar todos os times únicos do campeonato
+  // ── 1. Forma de todos os times (paralelo em lotes) ──
   var times = {};
   if(dtState.classif) {
     dtState.classif.forEach(function(t) {
@@ -4916,18 +4916,18 @@ async function dtEnriquecerAsync() {
       if(tid && !times[tid]) times[tid] = tObj;
     });
   }
-
   var tids = Object.keys(times);
-  for(var i=0; i<tids.length; i++) {
-    var tid = tids[i];
-    if(dtState.formaCache[tid]) continue;
-    var jogos = await dtFetch('/times/' + tid + '/partidas');
-    if(jogos && Array.isArray(jogos)) {
+  // Buscar em lotes de 4 para não sobrecarregar
+  for(var i=0; i<tids.length; i+=4) {
+    var lote = tids.slice(i, i+4);
+    await Promise.all(lote.map(async function(tid) {
+      if(dtState.formaCache[tid]) return;
+      var jogos = await dtFetch('/times/' + tid + '/partidas');
+      if(!jogos || !Array.isArray(jogos)) return;
       var jogados = jogos.filter(function(j){
         return j.placar_mandante !== null && j.placar_mandante !== undefined && j.placar_mandante !== '';
       });
-      var ultimos = jogados.slice(-5);
-      dtState.formaCache[tid] = ultimos.map(function(j){
+      dtState.formaCache[tid] = jogados.slice(-5).map(function(j){
         var mand = j.time_mandante||j.mandante||{};
         var visit = j.time_visitante||j.visitante||{};
         var isM = (mand.time_id||mand.id) == tid;
@@ -4936,16 +4936,202 @@ async function dtEnriquecerAsync() {
         var opNome = isM ? (visit.nome_popular||visit.nome||'?') : (mand.nome_popular||mand.nome||'?');
         return { gN:gN, gO:gO, v:gN>gO, e:gN===gO, op:opNome };
       });
-      // Atualizar elementos de forma na página
-      var els = document.querySelectorAll('.dt-forma-' + tid);
-      els.forEach(function(el){ el.innerHTML = dtFormaHtml(tid, false); });
-      // Atualizar info do adversário principal
+      document.querySelectorAll('.dt-forma-' + tid).forEach(function(el){
+        el.innerHTML = dtFormaHtml(tid, false);
+      });
       if(dtState.adversario && (dtState.adversario.time_id||dtState.adversario.id) == tid) {
         var advForm = document.getElementById('dt-adv-forma-detalhada');
         if(advForm) advForm.innerHTML = dtAdvFormaDetalhada(dtState.adversario);
       }
+    }));
+  }
+
+  // ── 2. Elenco detalhado do adversário (produção) ──
+  if(dtState.adversario) {
+    var advTid = dtState.adversario.time_id||dtState.adversario.id;
+    if(advTid && !dtState.elencoAdv) {
+      var elenco = await dtFetch('/times/' + advTid + '/elenco');
+      if(elenco) {
+        dtState.elencoAdv = elenco;
+        var el = document.getElementById('dt-elenco-adv');
+        if(el) el.innerHTML = dtRenderElencoAdv(elenco);
+      }
     }
   }
+
+  // ── 3. Estatísticas dos últimos jogos do Osasco (por partida) ──
+  if(dtState.osascoTid && !dtState.statsOsasco) {
+    var osJogos = await dtFetch('/times/' + dtState.osascoTid + '/partidas');
+    if(osJogos && Array.isArray(osJogos)) {
+      var osJogados = osJogos.filter(function(j){
+        return j.placar_mandante !== null && j.placar_mandante !== undefined;
+      });
+      dtState.osascoPartidas = osJogados;
+      // Buscar stats das últimas 3 partidas em paralelo
+      var ultimas3 = osJogados.slice(-3);
+      var statsPromises = ultimas3.map(function(j){
+        var pid = j.partida_id||j.id;
+        return dtFetch('/partidas/' + pid).then(function(data){
+          if(data) dtState.partidasCache[pid] = data;
+          return data;
+        });
+      });
+      await Promise.all(statsPromises);
+      dtState.statsOsasco = true;
+
+      // Atualizar seção de stats se existir
+      var statsEl = document.getElementById('dt-stats-partidas');
+      if(statsEl) statsEl.innerHTML = dtRenderStatsPartidas();
+    }
+  }
+
+  // ── 4. Jogos ao vivo (se houver) ──
+  var aoVivo = await dtFetch('/ao-vivo');
+  if(aoVivo && Array.isArray(aoVivo) && aoVivo.length > 0) {
+    dtState.aoVivo = aoVivo;
+    var aoVivoEl = document.getElementById('dt-ao-vivo');
+    if(aoVivoEl) aoVivoEl.innerHTML = dtRenderAoVivo(aoVivo);
+  }
+}
+
+// ── Render elenco detalhado do adversário ──
+function dtRenderElencoAdv(elenco) {
+  var jogadores = elenco.atletas || elenco.jogadores || elenco || [];
+  if(!Array.isArray(jogadores) || jogadores.length === 0) {
+    return '<div style="color:var(--ts);font-size:12px">Elenco não disponível</div>';
+  }
+  var porPos = {};
+  var posOrder = ['Goleiro','Lateral','Zagueiro','Volante','Meia','Atacante'];
+  jogadores.forEach(function(j){
+    var pos = j.posicao || j.posicao_id || 'Outros';
+    // Normalizar nomes de posição
+    if(typeof pos === 'number') {
+      pos = [null,'Goleiro','Zagueiro','Lateral','Volante','Meia','Atacante'][pos] || 'Outros';
+    }
+    if(!porPos[pos]) porPos[pos] = [];
+    porPos[pos].push(j);
+  });
+  var html = '<div style="display:flex;flex-direction:column;gap:14px">';
+  var keys = posOrder.concat(Object.keys(porPos).filter(function(p){ return posOrder.indexOf(p)<0; }));
+  keys.forEach(function(pos){
+    if(!porPos[pos] || porPos[pos].length === 0) return;
+    html += '<div><div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(70,162,247,.08)">'+pos+'</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:4px">';
+    porPos[pos].forEach(function(j){
+      var nome = j.nome_popular||j.nome||'—';
+      var camisa = j.camisa||j.numero||'';
+      var foto = j.foto||j.imagem||'';
+      var nac = j.nacionalidade||'';
+      var idade = j.idade||'';
+      html += '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(70,162,247,.04)">' +
+        '<span style="font-family:Bebas Neue,sans-serif;font-size:16px;color:rgba(70,162,247,.35);width:22px;text-align:center;flex-shrink:0">'+(camisa||'—')+'</span>' +
+        (foto ? '<img src="'+foto+'" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0">' :
+          '<div style="width:26px;height:26px;border-radius:50%;background:rgba(70,162,247,.08);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px">👤</div>') +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:12px;font-weight:600;color:var(--wh);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nome+'</div>' +
+          (idade||nac ? '<div style="font-size:9px;color:var(--ts)">'+(idade?idade+' anos':'')+(idade&&nac?' · ':'')+nac+'</div>' : '') +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div></div>';
+  });
+  return html + '</div>';
+}
+
+// ── Render stats das últimas partidas ──
+function dtRenderStatsPartidas() {
+  var partidas = Object.values(dtState.partidasCache);
+  if(partidas.length === 0) return '<div style="color:var(--ts);font-size:12px">Sem dados de partidas disponíveis</div>';
+
+  var html = '<div style="display:flex;flex-direction:column;gap:12px">';
+  partidas.slice(-3).forEach(function(p) {
+    if(!p) return;
+    var mand = p.time_mandante||p.mandante||{};
+    var visit = p.time_visitante||p.visitante||{};
+    var osEmCasa = (mand.nome_popular||mand.nome||'').toLowerCase().indexOf('osasco') >= 0;
+    var oponente = osEmCasa ? (visit.nome_popular||visit.nome) : (mand.nome_popular||mand.nome);
+    var goOs = osEmCasa ? p.placar_mandante : p.placar_visitante;
+    var goAdv = osEmCasa ? p.placar_visitante : p.placar_mandante;
+    var dtStr = p.data_realizacao ? new Date(p.data_realizacao.replace(' ','T')).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '';
+
+    html += '<div style="background:rgba(0,0,0,.15);border:1px solid rgba(70,162,247,.08);border-radius:5px;padding:12px 14px">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+      '<div style="font-size:11px;font-weight:700;color:var(--wh)">'+dtStr+' vs '+oponente+'</div>' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:'+(goOs>goAdv?'var(--gr)':goOs<goAdv?'var(--re)':'var(--ye)')+'">'+(goOs||0)+' x '+(goAdv||0)+'</div>' +
+    '</div>';
+
+    // Estatísticas da partida se disponíveis
+    var stats = p.estatisticas || p.stats || {};
+    var mandStats = stats.mandante || stats.time_mandante || {};
+    var visitStats = stats.visitante || stats.time_visitante || {};
+    var osStats = osEmCasa ? mandStats : visitStats;
+    var advStats = osEmCasa ? visitStats : mandStats;
+
+    if(osStats.posse_de_bola || osStats.finalizacoes || osStats.escanteios) {
+      var statsList = [
+        ['Posse', (osStats.posse_de_bola||'—')+'%', (advStats.posse_de_bola||'—')+'%'],
+        ['Finalizações', osStats.finalizacoes||'—', advStats.finalizacoes||'—'],
+        ['No Alvo', osStats.finalizacoes_no_alvo||'—', advStats.finalizacoes_no_alvo||'—'],
+        ['Escanteios', osStats.escanteios||'—', advStats.escanteios||'—'],
+        ['Faltas', osStats.faltas||'—', advStats.faltas||'—'],
+        ['Cartões', (osStats.cartoes_amarelos||0)+'🟡 '+(osStats.cartoes_vermelhos||0)+'🔴',
+                    (advStats.cartoes_amarelos||0)+'🟡 '+(advStats.cartoes_vermelhos||0)+'🔴'],
+      ];
+      html += '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;font-size:11px">';
+      statsList.forEach(function(s){
+        html += '<span style="color:var(--az);text-align:right;font-weight:600">'+s[1]+'</span>' +
+          '<span style="color:var(--ts);text-align:center;font-size:9px;letter-spacing:1px;padding:0 6px">'+s[0]+'</span>' +
+          '<span style="color:var(--ts);text-align:left">'+s[2]+'</span>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div style="font-size:11px;color:var(--ts)">Estatísticas detalhadas não disponíveis para esta partida</div>';
+    }
+
+    // Gols marcados na partida
+    var gols = p.gols || [];
+    if(gols.length > 0) {
+      html += '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px">';
+      gols.forEach(function(g){
+        var jogador = g.atleta||g.jogador||{};
+        var nomeG = jogador.nome_popular||jogador.nome||'—';
+        var minuto = g.minuto||g.tempo||'—';
+        var isOsascoGol = (g.time||{}).nome_popular && ((g.time||{}).nome_popular||'').toLowerCase().indexOf('osasco')>=0;
+        html += '<span style="font-size:10px;padding:2px 8px;border-radius:2px;background:rgba(46,204,142,.1);border:1px solid rgba(46,204,142,.2);color:var(--gr)">⚽ '+minuto+'' '+nomeG+'</span>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+  });
+  return html + '</div>';
+}
+
+// ── Jogos ao vivo ──
+function dtRenderAoVivo(aoVivo) {
+  var paulista = aoVivo.filter(function(j){
+    var camp = j.campeonato||j.liga||{};
+    var n = (camp.nome||camp.nome_popular||'').toLowerCase();
+    return n.indexOf('paulista') >= 0;
+  });
+  if(paulista.length === 0 && aoVivo.length > 0) paulista = aoVivo.slice(0,3);
+  if(paulista.length === 0) return '';
+
+  var html = '<div style="background:rgba(46,204,142,.05);border:1px solid rgba(46,204,142,.2);border-radius:6px;padding:14px 18px;margin-bottom:12px">' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+      '<span style="width:8px;height:8px;border-radius:50%;background:var(--gr);animation:pulse 2s infinite;flex-shrink:0"></span>' +
+      '<div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gr)">Ao Vivo Agora</div>' +
+    '</div>';
+  paulista.forEach(function(j){
+    var mand = j.time_mandante||j.mandante||{};
+    var visit = j.time_visitante||j.visitante||{};
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(46,204,142,.1)">' +
+      '<span style="font-size:12px;color:var(--wh)">'+( mand.nome_popular||mand.nome)+'</span>' +
+      '<span style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--gr);padding:0 12px">'+(j.placar_mandante||0)+' x '+(j.placar_visitante||0)+'</span>' +
+      '<span style="font-size:12px;color:var(--wh)">'+(visit.nome_popular||visit.nome)+'</span>' +
+    '</div>';
+  });
+  return html + '</div>';
 }
 
 function dtNormalizaClassif(raw) {
@@ -5063,6 +5249,9 @@ function dtDificuldade() {
 function dtRenderDashboard() {
   var dash = document.getElementById('dt-dashboard');
   var html = '';
+
+  // ── AO VIVO (se houver jogos em andamento) ──
+  html += '<div id="dt-ao-vivo"></div>';
 
   // ── BLOCO A: PRÓXIMO JOGO + ADVERSÁRIO ──
   html += dtBlocoProxJogo();
@@ -5200,6 +5389,18 @@ function dtBlocoProxJogo() {
       s += '</div></div>';
     }
   }
+
+  // Elenco do adversário (populado assíncronamente)
+  s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:20px;margin-bottom:12px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px">📋 Elenco Completo — ' + advNome + '</div>' +
+    '<div id="dt-elenco-adv"><div style="color:var(--ts);font-size:12px">Carregando elenco...</div></div>' +
+  '</div>';
+
+  // Stats das últimas partidas do Osasco
+  s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:20px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px">📊 Últimas Partidas — Osasco Sporting (Stats)</div>' +
+    '<div id="dt-stats-partidas"><div style="color:var(--ts);font-size:12px">Carregando estatísticas...</div></div>' +
+  '</div>';
 
   return s + '</div>';
 }
