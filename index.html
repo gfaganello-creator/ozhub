@@ -4736,31 +4736,40 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <div id="mod-dep-tecnico" style="display:none;background:var(--bk);min-height:100vh">
   <div class="el-header">
-    <div style="margin-bottom:16px"><button onclick="hubVoltarDT()" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);background:none;border:1px solid rgba(70,162,247,.2);border-radius:3px;padding:7px 14px;cursor:pointer">&#8592; Hub</button></div>
-    <div class="el-title">DEP. <em>TÉCNICO</em></div>
-    <div class="el-sub">Osasco Sporting &middot; Paulista A2 · <span id="dt-sync">Carregando...</span></div>
-    <div class="el-tabs" style="margin-top:20px">
-      <div class="el-tab active" id="dt-btn-adversario" onclick="dtVerTab('adversario',this)">Próx. Adversário</div>
-      <div class="el-tab" id="dt-btn-classificacao" onclick="dtVerTab('classificacao',this)">Classificação</div>
-      <div class="el-tab" id="dt-btn-elenco" onclick="dtVerTab('elenco',this)">Nosso Elenco</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+      <button onclick="hubVoltarDT()" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);background:none;border:1px solid rgba(70,162,247,.2);border-radius:3px;padding:7px 14px;cursor:pointer">&#8592; Hub</button>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span id="dt-sync" style="font-size:10px;color:var(--ts)">Carregando...</span>
+        <button onclick="dtCarregar()" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:3px;cursor:pointer;background:rgba(70,162,247,.1);color:var(--az);border:1px solid rgba(70,162,247,.25)">&#8635; Atualizar</button>
+      </div>
     </div>
+    <div class="el-title">DEP. <em>TÉCNICO</em></div>
+    <div class="el-sub" style="margin-top:4px">Osasco Sporting &middot; <span id="dt-camp-nome">Paulista A2</span> &middot; Central de Análise</div>
   </div>
-  <div class="el-body">
-    <div id="dt-content">
-      <div style="color:var(--ts);font-size:13px">Carregando...</div>
+  <div class="el-body" id="dt-dashboard">
+    <div style="color:var(--ts);font-size:13px;padding:60px 0;text-align:center">
+      <div style="font-family:Bebas Neue,sans-serif;font-size:32px;color:var(--az);margin-bottom:8px">Conectando à API Futebol...</div>
+      <div>Carregando classificação, rodadas e dados dos adversários</div>
     </div>
   </div>
 </div>
 
-
 <script>
 // ══════════════════════════════════════
-// DEP. TÉCNICO
+// DEP. TÉCNICO v4 — Central de Análise
 // ══════════════════════════════════════
 var DT_API_KEY = 'live_14e70fe96049615c1c7760495ede62';
 var DT_API_BASE = 'https://api.api-futebol.com.br/v1';
-var DT_TAB = 'adversario';
-var dtDados = {};
+var dtState = {
+  campId: null, campNome: '',
+  classif: null, rodadas: null,
+  proxJogo: null, adversario: null,
+  jogosOsasco: [],
+  artilharia: null,
+  formaCache: {},     // tid -> [{gN,gO,v,e,op}]
+  partidasCache: {},  // partida_id -> stats detalhadas
+  osascoTid: null
+};
 
 function abrirDepTecnico(e) {
   if(e) e.preventDefault();
@@ -4779,288 +4788,671 @@ function hubVoltarDT() {
 
 async function dtFetch(endpoint) {
   try {
-    var res = await fetch(DT_API_BASE + endpoint, {
-      headers: { 'Authorization': 'Bearer ' + DT_API_KEY }
-    });
+    var res = await fetch(DT_API_BASE + endpoint, { headers: { 'Authorization': 'Bearer ' + DT_API_KEY } });
     if(!res.ok) throw new Error(res.status);
     return await res.json();
-  } catch(e) {
-    console.warn('DT API error:', endpoint, e.message);
-    return null;
-  }
+  } catch(e) { console.warn('DT API:', endpoint, e.message); return null; }
 }
 
+// ── Carregamento principal ──
 async function dtCarregar() {
-  document.getElementById('dt-sync').textContent = 'Carregando...';
+  var syncEl = document.getElementById('dt-sync');
+  var dash = document.getElementById('dt-dashboard');
+  if(syncEl) syncEl.textContent = 'Carregando...';
+  dash.innerHTML = '<div style="color:var(--ts);font-size:13px;padding:60px 0;text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--az);margin-bottom:8px">Conectando...</div><div>Buscando campeonato e dados dos adversários</div></div>';
+
   try {
-    // Busca campeonatos disponíveis
-    var camps = await dtFetch('/campeonatos');
-    if(camps) {
-      // Procura Paulista A2
-      var paulistaA2 = null;
-      if(Array.isArray(camps)) {
-        paulistaA2 = camps.find(function(c){
-          return (c.nome||'').toLowerCase().indexOf('paulista') >= 0 &&
-                 (c.nome||'').toLowerCase().indexOf('a2') >= 0;
+    // 1. Descobrir campeonato
+    if(!dtState.campId) {
+      var camps = await dtFetch('/campeonatos');
+      if(camps && Array.isArray(camps)) {
+        var match = camps.find(function(c){
+          var n = (c.nome||c.nome_popular||'').toLowerCase();
+          return n.indexOf('paulista') >= 0 && n.indexOf('a2') >= 0;
         }) || camps.find(function(c){
-          return (c.nome||'').toLowerCase().indexOf('paulista') >= 0;
+          return (c.nome||c.nome_popular||'').toLowerCase().indexOf('paulista') >= 0;
         });
+        if(match) {
+          dtState.campId = match.campeonato_id || match.id;
+          dtState.campNome = match.nome || match.nome_popular || 'Paulista A2';
+          var cn = document.getElementById('dt-camp-nome');
+          if(cn) cn.textContent = dtState.campNome;
+        }
       }
-      if(paulistaA2) {
-        dtDados.campId = paulistaA2.campeonato_id || paulistaA2.id;
-        dtDados.campNome = paulistaA2.nome;
+      if(!dtState.campId) dtState.campId = 34;
+    }
+    var cid = dtState.campId;
+
+    // 2. Carregar tudo em paralelo
+    var results = await Promise.all([
+      dtFetch('/campeonatos/' + cid + '/tabela'),
+      dtFetch('/campeonatos/' + cid + '/fases'),
+      dtFetch('/campeonatos/' + cid + '/artilharia')
+    ]);
+    dtState.classif = dtNormalizaClassif(results[0]);
+    var fazes = results[1];
+    dtState.artilharia = results[2];
+
+    // 3. Rodadas
+    var rodadas = null;
+    if(fazes && Array.isArray(fazes) && fazes.length > 0) {
+      var faseAtiva = fazes.find(function(f){ return f.status === 'andamento'; }) || fazes[fazes.length-1];
+      if(faseAtiva) {
+        var fd = await dtFetch('/campeonatos/' + cid + '/fases/' + (faseAtiva.fase_id||faseAtiva.id));
+        if(fd && fd.rodadas) rodadas = fd.rodadas;
+        else if(Array.isArray(fd)) rodadas = fd;
       }
     }
+    if(!rodadas) rodadas = await dtFetch('/campeonatos/' + cid + '/rodadas');
+    dtState.rodadas = rodadas;
 
-    // Busca rodadas e classificação em paralelo
-    var campId = dtDados.campId || 10;
-    var [rodadas, classif] = await Promise.all([
-      dtFetch('/campeonatos/' + campId + '/rodadas'),
-      dtFetch('/campeonatos/' + campId + '/tabela')
-    ]);
+    // 4. Parsear jogos do Osasco + identificar próximo jogo
+    dtState.proxJogo = null; dtState.adversario = null;
+    dtState.jogosOsasco = [];
+    var hoje = new Date();
 
-    dtDados.rodadas = rodadas;
-    dtDados.classif = classif;
-
-    // Identifica próximo adversário do Osasco
-    dtDados.proxJogo = null;
-    dtDados.adversario = null;
     if(rodadas && Array.isArray(rodadas)) {
-      var hoje = new Date();
       rodadas.forEach(function(rodada) {
-        if(!rodada.partidas) return;
-        rodada.partidas.forEach(function(p) {
-          var times = [p.time_mandante, p.time_visitante];
-          var isOsasco = times.some(function(t){
-            return t && (t.nome||'').toLowerCase().indexOf('osasco') >= 0;
-          });
+        var partidas = rodada.partidas || rodada.jogos || [];
+        partidas.forEach(function(p) {
+          var mand = p.time_mandante||p.mandante||{};
+          var visit = p.time_visitante||p.visitante||{};
+          var mNome = (mand.nome_popular||mand.nome||'').toLowerCase();
+          var vNome = (visit.nome_popular||visit.nome||'').toLowerCase();
+          var isOsasco = mNome.indexOf('osasco')>=0 || vNome.indexOf('osasco')>=0;
           if(!isOsasco) return;
-          var dataStr = p.data_realizacao || p.data || '';
-          var dt = dataStr ? new Date(dataStr) : null;
-          if(dt && dt >= hoje && (!dtDados.proxJogo || dt < dtDados.proxJogo.dt)) {
-            dtDados.proxJogo = {dt:dt, partida:p};
-            dtDados.adversario = (p.time_mandante.nome||'').toLowerCase().indexOf('osasco') >= 0
-              ? p.time_visitante
-              : p.time_mandante;
+
+          // Identificar ID do Osasco
+          if(!dtState.osascoTid) {
+            if(mNome.indexOf('osasco')>=0) dtState.osascoTid = mand.time_id||mand.id;
+            else dtState.osascoTid = visit.time_id||visit.id;
+          }
+
+          var dataStr = p.data_realizacao||p.data_hora||p.data||'';
+          var dt = dataStr ? new Date(dataStr.replace(' ','T')) : null;
+          var jogado = p.placar_mandante !== null && p.placar_mandante !== undefined && p.placar_mandante !== '';
+          var emCasa = mNome.indexOf('osasco')>=0;
+          var adv = emCasa ? visit : mand;
+
+          dtState.jogosOsasco.push({
+            dt:dt, partida:p, rodada:rodada.nome||('Rd '+(rodada.rodada||rodada.rodada_id||'')),
+            adversario:adv, jogado:jogado, emCasa:emCasa
+          });
+
+          if(dt && dt >= hoje && !jogado && (!dtState.proxJogo || dt < dtState.proxJogo.dt)) {
+            dtState.proxJogo = { dt:dt, partida:p, rodada:rodada.nome||'' };
+            dtState.adversario = adv;
           }
         });
       });
     }
 
-    document.getElementById('dt-sync').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    dtRenderTab();
+    // Ordenar jogos por data
+    dtState.jogosOsasco.sort(function(a,b){ return (a.dt||0)-(b.dt||0); });
+
+    // 5. Renderizar dashboard base
+    if(syncEl) syncEl.textContent = 'Base carregada · enriquecendo...';
+    dtRenderDashboard();
+
+    // 6. Enriquecer assincronamente (forma dos times, detalhes de partidas)
+    dtEnriquecerAsync();
+
+    if(syncEl) syncEl.textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 
   } catch(e) {
-    document.getElementById('dt-sync').textContent = 'Erro ao carregar';
-    console.warn('dtCarregar error:', e);
+    if(syncEl) syncEl.textContent = 'Erro: ' + e.message;
+    dash.innerHTML = '<div style="color:var(--re);font-size:13px;padding:40px">Erro ao carregar dados: ' + e.message + '</div>';
   }
 }
 
-function dtVerTab(tab) {
-  DT_TAB = tab;
-  ['adversario','classificacao','elenco'].forEach(function(t) {
-    var btn = document.getElementById('dt-btn-'+t);
-    if(!btn) return;
-    if(t === tab) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
-  dtRenderTab();
-}
-
-function dtRenderTab() {
-  if(DT_TAB === 'adversario') dtRenderAdversario();
-  else if(DT_TAB === 'classificacao') dtRenderClassificacao();
-  else if(DT_TAB === 'elenco') dtRenderElenco();
-}
-
-function dtRenderAdversario() {
-  var el = document.getElementById('dt-content');
-  if(!dtDados.proxJogo) {
-    el.innerHTML = '<div style="color:var(--ts);font-size:13px">Nenhum próximo jogo encontrado na API.</div>';
-    return;
-  }
-
-  var p = dtDados.proxJogo.partida;
-  var adv = dtDados.adversario;
-  var dtFmt = dtDados.proxJogo.dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-  var dias = Math.ceil((dtDados.proxJogo.dt - new Date())/(1000*60*60*24));
-
-  // Busca últimos jogos do adversário
-  dtFetchUltimosJogos(adv);
-
-  el.innerHTML =
-    '<div class="cr rv">' +
-      // Card adversário
-      '<div class="cd" style="flex:1">' +
-        '<div class="cdt">Próximo Adversário</div>' +
-        '<div class="cds">' + dtFmt + ' · em ' + dias + ' dias</div>' +
-        '<div style="margin-top:20px">' +
-          '<div style="font-family:Bebas Neue,sans-serif;font-size:40px;color:var(--wh);letter-spacing:2px">' + (adv?adv.nome:'—') + '</div>' +
-          '<div style="font-size:11px;color:var(--ts);margin-top:4px">' +
-            (p.estadio ? '📍 ' + p.estadio : '') +
-            (p.fase ? ' · ' + p.fase : '') +
-          '</div>' +
-        '</div>' +
-        '<div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">' +
-          '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:3px;padding:10px 16px;text-align:center">' +
-            '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Mando</div>' +
-            '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--wh);margin-top:4px">' +
-              ((p.time_mandante.nome||'').toLowerCase().indexOf('osasco')>=0 ? 'Casa' : 'Fora') +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-      // Últimos jogos do adversário
-      '<div class="cd" style="flex:1.5">' +
-        '<div class="cdt">Últimos Jogos do Adversário</div>' +
-        '<div class="cds">Forma recente</div>' +
-        '<div id="dt-ultimos-adv" style="margin-top:12px"><div style="color:var(--ts);font-size:12px">Buscando...</div></div>' +
-      '</div>' +
-      // Atletas disponíveis
-      '<div class="cd" style="flex:1">' +
-        '<div class="cdt">Nossos Disponíveis</div>' +
-        '<div class="cds">Cruzamento com NSP</div>' +
-        '<div id="dt-disponiveis" style="margin-top:12px">' + dtRenderDisponiveis() + '</div>' +
-      '</div>' +
-    '</div>';
-}
-
-async function dtFetchUltimosJogos(adv) {
-  if(!adv || !adv.time_id) return;
-  var jogos = await dtFetch('/times/' + adv.time_id + '/partidas');
-  var el = document.getElementById('dt-ultimos-adv');
-  if(!el) return;
-  if(!jogos || !Array.isArray(jogos) || jogos.length === 0) {
-    el.innerHTML = '<div style="color:var(--ts);font-size:12px">Sem dados disponíveis</div>';
-    return;
-  }
-  var ultimos = jogos.filter(function(j){ return j.placar_mandante !== null; }).slice(-5);
-  var html = '<div style="display:flex;flex-direction:column;gap:6px">';
-  ultimos.forEach(function(j) {
-    var isAdv = (j.time_mandante.time_id === adv.time_id);
-    var golsAdv = isAdv ? j.placar_mandante : j.placar_visitante;
-    var golsOp  = isAdv ? j.placar_visitante : j.placar_mandante;
-    var op = isAdv ? j.time_visitante.nome : j.time_mandante.nome;
-    var venceu = golsAdv > golsOp;
-    var empatou = golsAdv === golsOp;
-    var badge = empatou ?
-      '<span style="background:rgba(245,158,11,.15);color:var(--ye);border:1px solid rgba(245,158,11,.3);font-size:9px;font-weight:700;padding:2px 8px;border-radius:2px">E</span>' :
-      venceu ?
-      '<span style="background:rgba(46,204,142,.15);color:var(--gr);border:1px solid rgba(46,204,142,.3);font-size:9px;font-weight:700;padding:2px 8px;border-radius:2px">V</span>' :
-      '<span style="background:rgba(239,68,68,.15);color:var(--re);border:1px solid rgba(239,68,68,.3);font-size:9px;font-weight:700;padding:2px 8px;border-radius:2px">D</span>';
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--c2);border:1px solid rgba(70,162,247,.06);border-radius:3px">' +
-      '<div style="display:flex;align-items:center;gap:8px">' + badge +
-        '<span style="font-size:12px;color:var(--wh)">' + op + '</span></div>' +
-      '<span style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--wh)">' + golsAdv + ' x ' + golsOp + '</span>' +
-    '</div>';
-  });
-  html += '</div>';
-  el.innerHTML = html;
-}
-
-function dtRenderDisponiveis() {
-  // Usa dados do NSP já carregados
-  if(!window.nspCadastro || !window.nspRecuperacao) return '<div style="color:var(--ts);font-size:12px">Abra o Plantel primeiro</div>';
-  var aptMap = {};
-  nspRecuperacao.forEach(function(r){
-    if(r['Nome']) aptMap[r['Nome']] = r['Característica']||r['Caracteristica']||'';
-  });
-  var disponiveis = nspCadastro.filter(function(r){
-    return (aptMap[r['Nome']]||'').toLowerCase().indexOf('apronto') >= 0;
-  });
-  var html = '<div style="margin-bottom:8px"><span style="font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--gr)">' + disponiveis.length + '</span> <span style="font-size:11px;color:var(--ts)">atletas aptos</span></div>';
-  html += '<div style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto">';
-  disponiveis.forEach(function(r){
-    var pos = r['Posição']||r['Posicao']||'—';
-    html += '<div style="font-size:11px;color:var(--wh);padding:4px 0;border-bottom:1px solid rgba(70,162,247,.06)">' +
-      r['Nome'] + ' <span style="color:var(--ts)">· ' + pos + '</span></div>';
-  });
-  html += '</div>';
-  return html;
-}
-
-function dtRenderClassificacao() {
-  var el = document.getElementById('dt-content');
-  if(!dtDados.classif || !Array.isArray(dtDados.classif)) {
-    el.innerHTML = '<div style="color:var(--ts);font-size:13px">Classificação não disponível.</div>';
-    return;
-  }
-  var html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
-    '<thead><tr>' +
-    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">#</th>' +
-    '<th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">Time</th>' +
-    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">Pts</th>' +
-    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">J</th>' +
-    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">V</th>' +
-    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">E</th>' +
-    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">D</th>' +
-    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">SG</th>' +
-    '</tr></thead><tbody>';
-
-  dtDados.classif.forEach(function(t, i) {
-    var isOsasco = (t.time&&(t.time.nome||'').toLowerCase().indexOf('osasco')>=0);
-    var nome = t.time ? t.time.nome : (t.nome||'—');
-    html += '<tr style="border-bottom:1px solid rgba(70,162,247,.05);' + (isOsasco?'background:rgba(70,162,247,.08)':'') + '">' +
-      '<td style="padding:10px 12px;text-align:center;color:var(--ts)">' + (t.posicao||i+1) + '</td>' +
-      '<td style="padding:10px 12px;color:' + (isOsasco?'var(--az)':'var(--wh)') + ';font-weight:' + (isOsasco?'700':'400') + '">' + nome + '</td>' +
-      '<td style="padding:10px 12px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:16px;color:var(--wh)">' + (t.pontos||0) + '</td>' +
-      '<td style="padding:10px 12px;text-align:center;color:var(--ts)">' + (t.jogos||0) + '</td>' +
-      '<td style="padding:10px 12px;text-align:center;color:var(--gr)">' + (t.vitorias||0) + '</td>' +
-      '<td style="padding:10px 12px;text-align:center;color:var(--ye)">' + (t.empates||0) + '</td>' +
-      '<td style="padding:10px 12px;text-align:center;color:var(--re)">' + (t.derrotas||0) + '</td>' +
-      '<td style="padding:10px 12px;text-align:center;color:var(--ts)">' + (t.saldo_gols||0) + '</td>' +
-    '</tr>';
-  });
-  html += '</tbody></table></div>';
-  el.innerHTML = html;
-}
-
-function dtRenderElenco() {
-  var el = document.getElementById('dt-content');
-  // Usa dados do NSP
-  if(!window.nspCadastro || nspCadastro.length === 0) {
-    el.innerHTML = '<div style="color:var(--ts);font-size:13px">Abra o Plantel primeiro para carregar o elenco.</div>';
-    return;
-  }
-  var aptMap = {};
-  if(window.nspRecuperacao) {
-    nspRecuperacao.forEach(function(r){
-      if(r['Nome']) aptMap[r['Nome']] = r['Característica']||r['Caracteristica']||'';
+// Enriquecimento async: busca forma dos times sequencialmente
+async function dtEnriquecerAsync() {
+  // Coletar todos os times únicos do campeonato
+  var times = {};
+  if(dtState.classif) {
+    dtState.classif.forEach(function(t) {
+      var tObj = t.time||t;
+      var tid = tObj.time_id||tObj.id;
+      if(tid && !times[tid]) times[tid] = tObj;
     });
   }
-  // Agrupa por posição
-  var porPosicao = {};
-  nspCadastro.forEach(function(r){
-    var pos = r['Posição']||r['Posicao']||'Outros';
-    if(!porPosicao[pos]) porPosicao[pos] = [];
-    porPosicao[pos].push(r);
+
+  var tids = Object.keys(times);
+  for(var i=0; i<tids.length; i++) {
+    var tid = tids[i];
+    if(dtState.formaCache[tid]) continue;
+    var jogos = await dtFetch('/times/' + tid + '/partidas');
+    if(jogos && Array.isArray(jogos)) {
+      var jogados = jogos.filter(function(j){
+        return j.placar_mandante !== null && j.placar_mandante !== undefined && j.placar_mandante !== '';
+      });
+      var ultimos = jogados.slice(-5);
+      dtState.formaCache[tid] = ultimos.map(function(j){
+        var mand = j.time_mandante||j.mandante||{};
+        var visit = j.time_visitante||j.visitante||{};
+        var isM = (mand.time_id||mand.id) == tid;
+        var gN = isM ? (j.placar_mandante||0) : (j.placar_visitante||0);
+        var gO = isM ? (j.placar_visitante||0) : (j.placar_mandante||0);
+        var opNome = isM ? (visit.nome_popular||visit.nome||'?') : (mand.nome_popular||mand.nome||'?');
+        return { gN:gN, gO:gO, v:gN>gO, e:gN===gO, op:opNome };
+      });
+      // Atualizar elementos de forma na página
+      var els = document.querySelectorAll('.dt-forma-' + tid);
+      els.forEach(function(el){ el.innerHTML = dtFormaHtml(tid, false); });
+      // Atualizar info do adversário principal
+      if(dtState.adversario && (dtState.adversario.time_id||dtState.adversario.id) == tid) {
+        var advForm = document.getElementById('dt-adv-forma-detalhada');
+        if(advForm) advForm.innerHTML = dtAdvFormaDetalhada(dtState.adversario);
+      }
+    }
+  }
+}
+
+function dtNormalizaClassif(raw) {
+  if(!raw) return null;
+  if(Array.isArray(raw)) return raw;
+  var keys = Object.keys(raw);
+  if(keys.length > 0 && Array.isArray(raw[keys[0]])) return raw[keys[0]];
+  return null;
+}
+
+// ── Forma compacta (bolinhas) ──
+function dtFormaHtml(tid, loading) {
+  if(loading) return '<span style="color:var(--ts);font-size:10px">···</span>';
+  var forma = dtState.formaCache[tid];
+  if(!forma || forma.length === 0) return '<span style="color:var(--ts);font-size:10px">—</span>';
+  var html = '<div style="display:flex;gap:3px;align-items:center">';
+  forma.forEach(function(j) {
+    var cor = j.e?'var(--ye)':j.v?'var(--gr)':'var(--re)';
+    var l = j.e?'E':j.v?'V':'D';
+    html += '<span title="' + (j.v?'Vitória ':j.e?'Empate ':'Derrota ') + j.gN + 'x' + j.gO + ' vs ' + j.op +
+      '" style="width:20px;height:20px;border-radius:50%;background:'+cor+'20;border:1px solid '+cor+'60;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:'+cor+'">'+l+'</span>';
   });
-  var html = '<div style="display:flex;flex-direction:column;gap:20px">';
-  Object.entries(porPosicao).forEach(function(entry){
-    var pos = entry[0], atletas = entry[1];
-    html += '<div><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(70,162,247,.1)">' + pos + '</div>';
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">';
-    atletas.forEach(function(r){
-      var nome = r['Nome']||'—';
-      var lat = r['Lateralidade']||'';
-      var apt = aptMap[nome]||'';
-      var isApto = apt.toLowerCase().indexOf('apronto') >= 0;
-      var aptColor = isApto ? 'var(--gr)' : apt ? 'var(--re)' : 'var(--ts)';
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--c2);border:1px solid rgba(70,162,247,.06);border-radius:3px">' +
-        '<div>' +
-          '<div style="font-size:12px;font-weight:600;color:var(--wh)">' + nome + '</div>' +
-          '<div style="font-size:10px;color:var(--ts)">' + lat + '</div>' +
-        '</div>' +
-        '<span style="font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:2px;background:' + aptColor + '20;color:' + aptColor + ';border:1px solid ' + aptColor + '40">' + (apt||'—') + '</span>' +
+  return html + '</div>';
+}
+
+// ── Forma detalhada do adversário (lista de resultados) ──
+function dtAdvFormaDetalhada(adv) {
+  var tid = adv.time_id||adv.id;
+  var forma = dtState.formaCache[tid];
+  if(!forma) return '<div style="color:var(--ts);font-size:12px">Carregando forma do adversário...</div>';
+  if(forma.length === 0) return '<div style="color:var(--ts);font-size:12px">Sem dados disponíveis</div>';
+
+  // Estatísticas agregadas
+  var v=0,e=0,d=0,gm=0,gs=0;
+  forma.forEach(function(j){ if(j.v)v++;else if(j.e)e++;else d++; gm+=parseInt(j.gN)||0; gs+=parseInt(j.gO)||0; });
+
+  var resumoHtml = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px">';
+  var stats = [['V',v,'var(--gr)'],['E',e,'var(--ye)'],['D',d,'var(--re)'],['GM',gm,'var(--wh)'],['GS',gs,'var(--ts)']];
+  stats.forEach(function(s){
+    resumoHtml += '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:8px;text-align:center">' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:'+s[2]+';line-height:1">'+s[1]+'</div>' +
+      '<div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts)">'+s[0]+'</div></div>';
+  });
+  resumoHtml += '</div>';
+
+  var listaHtml = '<div style="display:flex;flex-direction:column;gap:5px">';
+  forma.slice().reverse().forEach(function(j){
+    var cor = j.e?'var(--ye)':j.v?'var(--gr)':'var(--re)';
+    var l = j.e?'E':j.v?'V':'D';
+    listaHtml += '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:'+cor+'10;border:1px solid '+cor+'30;border-radius:4px">' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span style="background:'+cor+'20;color:'+cor+';border:1px solid '+cor+'50;font-size:9px;font-weight:700;padding:2px 8px;border-radius:2px">'+l+'</span>' +
+        '<span style="font-size:12px;color:var(--wh)">'+j.op+'</span>' +
+      '</div>' +
+      '<span style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--wh)">'+j.gN+' x '+j.gO+'</span>' +
+    '</div>';
+  });
+  return resumoHtml + listaHtml + '</div>';
+}
+
+// ── Estatísticas do Osasco na temporada ──
+function dtOsascoStats() {
+  var jogados = dtState.jogosOsasco.filter(function(j){ return j.jogado; });
+  if(jogados.length === 0) return null;
+  var v=0,e=0,d=0,gm=0,gs=0,em_casa=0,em_casa_v=0,fora=0,fora_v=0;
+  jogados.forEach(function(jg){
+    var p = jg.partida;
+    var emCasa = jg.emCasa;
+    var goOs = emCasa ? (p.placar_mandante||0) : (p.placar_visitante||0);
+    var goAdv = emCasa ? (p.placar_visitante||0) : (p.placar_mandante||0);
+    gm+=parseInt(goOs)||0; gs+=parseInt(goAdv)||0;
+    if(goOs>goAdv){v++; if(emCasa)em_casa_v++;else fora_v++;}
+    else if(goOs===goAdv) e++;
+    else d++;
+    if(emCasa) em_casa++; else fora++;
+  });
+  return { j:jogados.length, v:v, e:e, d:d, gm:gm, gs:gs,
+    ap:Math.round((v*3+e)/(jogados.length*3)*100),
+    em_casa:em_casa, em_casa_v:em_casa_v, fora:fora, fora_v:fora_v };
+}
+
+// ── Posição do Osasco na tabela ──
+function dtOsascoPosicao() {
+  if(!dtState.classif) return null;
+  var pos = -1;
+  dtState.classif.forEach(function(t,i){
+    var tObj = t.time||t;
+    var n = (tObj.nome_popular||tObj.nome||'').toLowerCase();
+    if(n.indexOf('osasco')>=0 && pos<0) pos=i;
+  });
+  return pos >= 0 ? { pos:pos+1, dados:dtState.classif[pos] } : null;
+}
+
+// ── Dificuldade estimada do próximo jogo ──
+function dtDificuldade() {
+  if(!dtState.adversario || !dtState.classif) return null;
+  var advNome = (dtState.adversario.nome_popular||dtState.adversario.nome||'').toLowerCase();
+  var posAdv = -1;
+  dtState.classif.forEach(function(t,i){
+    var tObj = t.time||t;
+    var n = (tObj.nome_popular||tObj.nome||'').toLowerCase();
+    if(n.indexOf(advNome.split(' ')[0])>=0 && posAdv<0) posAdv=i;
+  });
+  var total = dtState.classif.length;
+  if(posAdv < 0 || total === 0) return null;
+  var pct = 1 - posAdv/total; // 1 = 1º lugar, 0 = último
+  if(pct >= 0.75) return { nivel:'Alta', cor:'var(--re)', pct:pct };
+  if(pct >= 0.4)  return { nivel:'Média', cor:'var(--ye)', pct:pct };
+  return { nivel:'Baixa', cor:'var(--gr)', pct:pct };
+}
+
+// ══════════════════════════════════════
+// RENDER DASHBOARD
+// ══════════════════════════════════════
+function dtRenderDashboard() {
+  var dash = document.getElementById('dt-dashboard');
+  var html = '';
+
+  // ── BLOCO A: PRÓXIMO JOGO + ADVERSÁRIO ──
+  html += dtBlocoProxJogo();
+
+  // ── BLOCO B: PLANTEL DISPONÍVEL ──
+  html += dtBlocoPlantel();
+
+  // ── BLOCO C: CALENDÁRIO E DESEMPENHO DO OSASCO ──
+  html += dtBlocoDesempenho();
+
+  // ── BLOCO D: CLASSIFICAÇÃO + ARTILHARIA ──
+  html += dtBlocoClassificacao();
+
+  dash.innerHTML = html;
+}
+
+// ── BLOCO A: Próximo Jogo + Radar do Adversário ──
+function dtBlocoProxJogo() {
+  var s = '<div style="margin-bottom:36px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">ANÁLISE TÁTICA</div>' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Radar do Próximo Adversário</div>';
+
+  if(!dtState.proxJogo) {
+    var proxFuturos = dtState.jogosOsasco.filter(function(j){ return !j.jogado; });
+    if(proxFuturos.length === 0) {
+      return s + '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:24px;color:var(--ts)">Nenhum jogo futuro encontrado na API. O campeonato pode estar encerrado ou em pausa.</div></div>';
+    }
+  }
+
+  var adv = dtState.adversario || {};
+  var advNome = adv.nome_popular||adv.nome||'—';
+  var advEscudo = adv.escudo||adv.logo||'';
+  var advTid = adv.time_id||adv.id;
+
+  // Dados do jogo
+  var dtObj = dtState.proxJogo ? dtState.proxJogo.dt : null;
+  var hrFmt = dtObj ? dtObj.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '—';
+  var dtFmt = dtObj ? dtObj.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'}) : '—';
+  var diasNum = dtObj ? Math.max(0, Math.ceil((dtObj - new Date())/(1000*60*60*24))) : 0;
+  var p = dtState.proxJogo ? dtState.proxJogo.partida : {};
+  var mand = p.time_mandante||p.mandante||{};
+  var emCasa = (mand.nome_popular||mand.nome||'').toLowerCase().indexOf('osasco') >= 0;
+  var estadio = p.estadio || '—';
+  var dific = dtDificuldade();
+
+  // Posição do adversário na tabela
+  var posAdvObj = null;
+  if(dtState.classif && advNome !== '—') {
+    dtState.classif.forEach(function(t,i){
+      var tObj = t.time||t;
+      var n = (tObj.nome_popular||tObj.nome||'').toLowerCase();
+      if(n.indexOf(advNome.toLowerCase().split(' ')[0])>=0 && !posAdvObj) posAdvObj = { pos:i+1, d:t };
+    });
+  }
+
+  s += '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-bottom:12px">';
+
+  // Card do jogo
+  s += '<div style="background:linear-gradient(135deg,rgba(70,162,247,.1),var(--c2));border:1px solid rgba(70,162,247,.25);border-radius:8px;padding:24px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az);margin-bottom:14px">' + (dtState.proxJogo ? (dtState.proxJogo.rodada||'PRÓXIMA RODADA') : 'PRÓXIMO JOGO') + '</div>' +
+    '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">' +
+      (advEscudo ? '<img src="'+advEscudo+'" style="width:72px;height:72px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'">' :
+       '<div style="width:72px;height:72px;border-radius:50%;background:rgba(70,162,247,.08);border:2px solid rgba(70,162,247,.15);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">⚽</div>') +
+      '<div>' +
+        '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(24px,3vw,36px);color:var(--wh);letter-spacing:1px;line-height:1">'+advNome+'</div>' +
+        (posAdvObj ? '<div style="font-size:11px;color:var(--ts);margin-top:4px">'+posAdvObj.pos+'º lugar · '+((posAdvObj.d.pontos||0))+' pts · '+(posAdvObj.d.jogos||0)+' jogos</div>' : '') +
+        (dific ? '<div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:'+dific.cor+'15;border:1px solid '+dific.cor+'40;padding:3px 10px;border-radius:3px"><span style="width:7px;height:7px;border-radius:50%;background:'+dific.cor+'"></span><span style="font-size:10px;font-weight:700;letter-spacing:1px;color:'+dific.cor+'">DIFICULDADE '+dific.nivel.toUpperCase()+'</span></div>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+      '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Data</div><div style="font-size:11px;font-weight:700;color:var(--wh)">'+dtFmt+'</div></div>' +
+      '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Horário</div><div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:var(--az);line-height:1;margin-top:2px">'+hrFmt+'</div></div>' +
+      '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Contagem</div><div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:'+(diasNum<=3?'var(--re)':diasNum<=7?'var(--ye)':'var(--wh)')+';line-height:1;margin-top:2px">'+(diasNum===0?'HOJE':diasNum===1?'AMANHÃ':diasNum+'d')+'</div></div>' +
+      '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px;grid-column:span 2"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Mando</div><div style="font-size:13px;font-weight:700;color:'+(emCasa?'var(--gr)':'var(--ye)')+';margin-top:2px">'+(emCasa?'🏟️ Mandante — Casa':'✈️ Visitante — Fora')+'</div></div>' +
+      '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Estádio</div><div style="font-size:11px;font-weight:600;color:var(--wh);margin-top:2px">'+estadio+'</div></div>' +
+    '</div>' +
+  '</div>';
+
+  // Card: Forma + Stats do adversário
+  s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:8px;padding:20px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:14px">Forma Recente — ' + advNome + '</div>' +
+    '<div id="dt-adv-forma-detalhada">' + dtAdvFormaDetalhada(adv) + '</div>' +
+  '</div>';
+
+  s += '</div>'; // fecha grid 2 colunas
+
+  // Stats da tabela do adversário (linha de stats)
+  if(posAdvObj) {
+    var d = posAdvObj.d;
+    var sg = d.saldo_gols||0;
+    s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:12px;margin-bottom:12px">';
+    var sts = [
+      ['Posição', posAdvObj.pos+'º','var(--ye)'],
+      ['Pontos', d.pontos||0, 'var(--wh)'],
+      ['Jogos', d.jogos||0, 'var(--ts)'],
+      ['Vitórias', d.vitorias||0, 'var(--gr)'],
+      ['Empates', d.empates||0, 'var(--ye)'],
+      ['Derrotas', d.derrotas||0, 'var(--re)'],
+      ['Gols M.', d.gols_marcados||d.gols_pro||0, 'var(--wh)'],
+      ['Gols S.', d.gols_sofridos||d.gols_contra||0, 'var(--ts)'],
+      ['Saldo', (sg>0?'+':'')+sg, sg>0?'var(--gr)':sg<0?'var(--re)':'var(--ts)'],
+      ['Aproveita.', Math.round(((d.pontos||0)/Math.max((d.jogos||1)*3,1))*100)+'%','var(--az)'],
+    ];
+    sts.forEach(function(st){
+      s += '<div style="text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:'+st[2]+';line-height:1">'+st[1]+'</div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-top:3px">'+st[0]+'</div></div>';
+    });
+    s += '</div>';
+  }
+
+  // Artilheiros do adversário
+  if(dtState.artilharia && Array.isArray(dtState.artilharia) && advNome !== '—') {
+    var artAdv = dtState.artilharia.filter(function(a){
+      var t = a.time||a.equipe||{};
+      var tn = (t.nome_popular||t.nome||'').toLowerCase();
+      return tn.indexOf(advNome.toLowerCase().split(' ')[0]) >= 0;
+    }).slice(0,5);
+    if(artAdv.length > 0) {
+      s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:16px 20px;margin-bottom:12px">' +
+        '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px">⚡ Jogadores Perigosos — ' + advNome + '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px">';
+      artAdv.forEach(function(a, i){
+        var jogador = a.atleta||a.jogador||a;
+        var nome = jogador.nome_popular||jogador.nome||'—';
+        var foto = jogador.foto||jogador.imagem||'';
+        var gols = a.gols||a.quantidade||0;
+        s += '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(70,162,247,.06)">' +
+          '<span style="font-family:Bebas Neue,sans-serif;font-size:18px;color:rgba(70,162,247,.35);width:22px">'+(i+1)+'</span>' +
+          (foto ? '<img src="'+foto+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">' : '<div style="width:32px;height:32px;border-radius:50%;background:rgba(70,162,247,.1);flex-shrink:0"></div>') +
+          '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--wh)">'+nome+'</div>' +
+            (jogador.posicao ? '<div style="font-size:10px;color:var(--ts)">'+jogador.posicao+'</div>' : '') +
+          '</div>' +
+          '<div style="text-align:right"><div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--re);line-height:1">'+gols+'</div><div style="font-size:8px;color:var(--ts)">gols</div></div>' +
+        '</div>';
+      });
+      s += '</div></div>';
+    }
+  }
+
+  return s + '</div>';
+}
+
+// ── BLOCO B: Plantel Disponível ──
+function dtBlocoPlantel() {
+  var s = '<div style="margin-bottom:36px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">ELENCO</div>' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Plantel Disponível para o Jogo</div>';
+
+  var temNSP = window.nspCadastro && window.nspRecuperacao;
+  if(!temNSP) {
+    return s + '<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:20px">' +
+      '<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ye);margin-bottom:8px">⚠️ Dados do Plantel Não Carregados</div>' +
+      '<div style="font-size:13px;color:var(--ts)">Para ver os atletas disponíveis aqui, acesse o módulo <strong style="color:var(--wh)">NSP</strong> (Núcleo de Saúde &amp; Performance) primeiro. Os dados de aptidão serão cruzados automaticamente.</div>' +
+    '</div></div>';
+  }
+
+  var aptMap = {};
+  nspRecuperacao.forEach(function(r){ if(r['Nome']) aptMap[r['Nome']] = r['Característica']||r['Caracteristica']||''; });
+
+  var aptos = []; var rehab = []; var outros = [];
+  nspCadastro.forEach(function(r){
+    var apt = aptMap[r['Nome']]||'';
+    var pos = r['Posição']||r['Posicao']||'Outros';
+    var obj = { nome:r['Nome'], pos:pos, apt:apt, lat:r['Lateralidade']||'' };
+    if(apt.toLowerCase().indexOf('apronto')>=0) aptos.push(obj);
+    else if(apt) rehab.push(obj);
+    else outros.push(obj);
+  });
+
+  // Stats de disponibilidade
+  s += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">' +
+    '<div style="background:rgba(46,204,142,.08);border:1px solid rgba(46,204,142,.2);border-radius:6px;padding:16px;text-align:center">' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:48px;color:var(--gr);line-height:1">'+aptos.length+'</div>' +
+      '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(46,204,142,.7);margin-top:4px">Aptos para Jogar</div>' +
+    '</div>' +
+    '<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:16px;text-align:center">' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:48px;color:var(--ye);line-height:1">'+rehab.length+'</div>' +
+      '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(245,158,11,.7);margin-top:4px">Em Reabilitação</div>' +
+    '</div>' +
+    '<div style="background:rgba(70,162,247,.05);border:1px solid rgba(70,162,247,.15);border-radius:6px;padding:16px;text-align:center">' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:48px;color:var(--wh);line-height:1">'+nspCadastro.length+'</div>' +
+      '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);margin-top:4px">Total no Plantel</div>' +
+    '</div>' +
+  '</div>';
+
+  // Aptos por posição
+  var posOrder = ['Goleiro','Lateral Dir.','Lateral Esq.','Zagueiro','Volante','Meia','Atacante'];
+  var porPos = {};
+  aptos.forEach(function(a){
+    if(!porPos[a.pos]) porPos[a.pos] = [];
+    porPos[a.pos].push(a);
+  });
+
+  s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:20px;margin-bottom:12px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:14px">✅ Disponíveis por Posição</div>' +
+    '<div style="display:flex;flex-direction:column;gap:10px">';
+
+  var posKeys = posOrder.concat(Object.keys(porPos).filter(function(p){ return posOrder.indexOf(p)<0; }));
+  posKeys.forEach(function(pos){
+    if(!porPos[pos]) return;
+    s += '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+      '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ts);min-width:80px">'+pos+'</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    porPos[pos].forEach(function(a){
+      s += '<span style="font-size:12px;font-weight:600;color:var(--wh);background:rgba(46,204,142,.1);border:1px solid rgba(46,204,142,.2);padding:3px 10px;border-radius:3px">'+a.nome+(a.lat?' <span style="font-size:9px;opacity:.6">'+a.lat+'</span>':'')+'</span>';
+    });
+    s += '</div></div>';
+  });
+  s += '</div></div>';
+
+  // Em Rehab
+  if(rehab.length > 0) {
+    s += '<div style="background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:16px 20px">' +
+      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--re);opacity:.8;margin-bottom:10px">🏥 Em Reabilitação — Não Disponíveis</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    rehab.forEach(function(a){
+      var aptLabel = a.apt.substring(0,20) + (a.apt.length>20?'...':'');
+      s += '<span title="'+a.apt+'" style="font-size:11px;color:rgba(240,244,248,.5);background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);padding:3px 10px;border-radius:3px">'+a.nome+' <span style="font-size:9px;opacity:.6">'+a.pos+'</span></span>';
+    });
+    s += '</div></div>';
+  }
+
+  return s + '</div>';
+}
+
+// ── BLOCO C: Desempenho do Osasco ──
+function dtBlocoDesempenho() {
+  var s = '<div style="margin-bottom:36px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">TEMPORADA</div>' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Osasco Sporting — Campanha</div>';
+
+  var stats = dtOsascoStats();
+  var posObj = dtOsascoPosicao();
+  var jogos = dtState.jogosOsasco;
+
+  if(stats) {
+    // KPIs
+    s += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-bottom:16px">';
+    var kpis = [
+      ['Posição', posObj ? posObj.pos+'º' : '—', 'var(--az)'],
+      ['Aproveit.', stats.ap+'%', stats.ap>=60?'var(--gr)':stats.ap>=40?'var(--ye)':'var(--re)'],
+      ['Jogos', stats.j, 'var(--wh)'],
+      ['Vitórias', stats.v, 'var(--gr)'],
+      ['Empates', stats.e, 'var(--ye)'],
+      ['Derrotas', stats.d, 'var(--re)'],
+      ['Gols M.', stats.gm, 'var(--wh)'],
+      ['Gols S.', stats.gs, 'var(--ts)'],
+      ['Saldo', (stats.gm-stats.gs>0?'+':'')+(stats.gm-stats.gs), stats.gm>stats.gs?'var(--gr)':stats.gm<stats.gs?'var(--re)':'var(--ts)'],
+      ['Casa V', Math.round(stats.em_casa>0?stats.em_casa_v/stats.em_casa*100:0)+'%','var(--az)'],
+      ['Fora V', Math.round(stats.fora>0?stats.fora_v/stats.fora*100:0)+'%','var(--az)'],
+    ];
+    kpis.forEach(function(k){
+      s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:5px;padding:12px;text-align:center">' +
+        '<div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:'+k[2]+';line-height:1">'+k[1]+'</div>' +
+        '<div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-top:4px">'+k[0]+'</div>' +
       '</div>';
     });
-    html += '</div></div>';
+    s += '</div>';
+  }
+
+  // Calendário completo
+  s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:20px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:14px">Calendário Completo</div>' +
+    '<div style="display:flex;flex-direction:column;gap:5px">';
+
+  var hoje = new Date();
+  jogos.forEach(function(jogo) {
+    var p = jogo.partida;
+    var adv = jogo.adversario||{};
+    var advNome = adv.nome_popular||adv.nome||'—';
+    var advEscudo = adv.escudo||adv.logo||'';
+    var advTid = adv.time_id||adv.id;
+    var isProx = dtState.proxJogo && dtState.proxJogo.partida === p;
+    var dtStr = jogo.dt ? jogo.dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '—';
+    var hrStr = jogo.dt ? jogo.dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+
+    var resultHtml = '';
+    if(jogo.jogado) {
+      var goOs = jogo.emCasa ? (p.placar_mandante||0) : (p.placar_visitante||0);
+      var goAdv = jogo.emCasa ? (p.placar_visitante||0) : (p.placar_mandante||0);
+      var v = goOs>goAdv; var e = goOs===goAdv;
+      var cor = e?'var(--ye)':v?'var(--gr)':'var(--re)';
+      resultHtml = '<div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">' +
+        '<span style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--wh)">'+goOs+' x '+goAdv+'</span>' +
+        '<span style="background:'+cor+'20;color:'+cor+';border:1px solid '+cor+'40;font-size:9px;font-weight:700;padding:2px 7px;border-radius:2px">'+(e?'E':v?'V':'D')+'</span>' +
+      '</div>';
+    } else {
+      resultHtml = '<div style="font-size:11px;color:var(--ts);text-align:right">' + hrStr + '</div>';
+    }
+
+    s += '<div style="display:grid;grid-template-columns:48px auto 1fr auto;align-items:center;gap:10px;padding:9px 12px;' +
+      'background:'+(isProx?'rgba(70,162,247,.08)':jogo.jogado?'rgba(0,0,0,.12)':'var(--c1)')+';' +
+      'border:1px solid '+(isProx?'rgba(70,162,247,.35)':jogo.jogado?'rgba(70,162,247,.04)':'rgba(70,162,247,.07)')+';' +
+      'border-radius:4px;'+(isProx?'border-left:3px solid var(--az);':'')+'">' +
+      '<div><div style="font-size:10px;font-weight:700;color:'+(isProx?'var(--az)':jogo.jogado?'var(--ts)':'var(--ts)')+'">'+dtStr+'</div>' +
+        '<div style="font-size:8px;color:rgba(122,155,181,.5)">'+(jogo.rodada||'').replace('Rodada','Rd').substring(0,8)+'</div></div>' +
+      (advEscudo ? '<img src="'+advEscudo+'" style="width:24px;height:24px;object-fit:contain">' :
+        '<div style="width:24px;height:24px;border-radius:50%;background:rgba(70,162,247,.06);border:1px solid rgba(70,162,247,.1);display:flex;align-items:center;justify-content:center;font-size:10px">⚽</div>') +
+      '<div>' +
+        '<div style="font-size:12px;font-weight:'+(isProx?'700':'500')+';color:'+(isProx?'var(--wh)':jogo.jogado?'rgba(240,244,248,.55)':'var(--wh)')+'">'+advNome+'</div>' +
+        '<div style="font-size:10px;color:var(--ts)">'+(jogo.emCasa?'Casa':'Fora')+(p.estadio ? ' · '+p.estadio : '')+'</div>' +
+      '</div>' +
+      '<div>' + resultHtml + '</div>' +
+    '</div>';
   });
-  html += '</div>';
-  el.innerHTML = html;
+
+  s += '</div></div>';
+  return s + '</div>';
+}
+
+// ── BLOCO D: Classificação + Artilharia ──
+function dtBlocoClassificacao() {
+  var s = '<div style="margin-bottom:36px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">COMPETIÇÃO</div>' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">' + (dtState.campNome||'Paulista A2') + '</div>';
+
+  s += '<div style="display:grid;grid-template-columns:1.8fr 1fr;gap:16px">';
+
+  // Classificação
+  if(dtState.classif && dtState.classif.length > 0) {
+    var advNomeBase = dtState.adversario ? (dtState.adversario.nome_popular||dtState.adversario.nome||'') : '';
+    s += '<div><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:10px">Tabela de Classificação</div>' +
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:420px">' +
+      '<thead><tr style="border-bottom:1px solid rgba(70,162,247,.15)">' +
+      ['#','Time','Forma','Pts','J','V','E','D','SG'].map(function(h){
+        return '<th style="padding:7px 8px;text-align:'+(h==='Time'||h==='Forma'?'left':'center')+';font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts)">'+h+'</th>';
+      }).join('') + '</tr></thead><tbody>';
+
+    dtState.classif.forEach(function(t, i) {
+      var tObj = t.time||t;
+      var nome = tObj.nome_popular||tObj.nome||'—';
+      var escudo = tObj.escudo||tObj.logo||'';
+      var tid = tObj.time_id||tObj.id;
+      var isOsasco = nome.toLowerCase().indexOf('osasco')>=0;
+      var isAdv = advNomeBase && nome.toLowerCase().indexOf(advNomeBase.toLowerCase().split(' ')[0])>=0;
+      var sg = t.saldo_gols||0;
+      s += '<tr style="border-bottom:1px solid rgba(70,162,247,.04);background:'+(isOsasco?'rgba(70,162,247,.08);border-left:3px solid var(--az)':isAdv?'rgba(245,158,11,.05);border-left:3px solid var(--ye)':'border-left:3px solid transparent')+'">' +
+        '<td style="padding:7px 8px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:14px;color:'+(isOsasco?'var(--az)':'var(--ts)')+'">'+(t.posicao||i+1)+'</td>' +
+        '<td style="padding:7px 8px;max-width:130px"><div style="display:flex;align-items:center;gap:6px">' +
+          (escudo?'<img src="'+escudo+'" style="width:18px;height:18px;object-fit:contain;flex-shrink:0">':'') +
+          '<span style="font-weight:'+(isOsasco||isAdv?'700':'400')+';color:'+(isOsasco?'var(--az)':isAdv?'var(--ye)':'var(--wh)')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px">'+nome+'</span>' +
+          (isOsasco?'<span style="font-size:7px;background:rgba(70,162,247,.2);color:var(--az);padding:1px 5px;border-radius:2px;flex-shrink:0">NÓS</span>':'') +
+          (isAdv?'<span style="font-size:7px;background:rgba(245,158,11,.2);color:var(--ye);padding:1px 5px;border-radius:2px;flex-shrink:0">ADV</span>':'') +
+        '</div></td>' +
+        '<td style="padding:7px 8px"><div class="dt-forma-'+(tid||i)+'">'+ dtFormaHtml(tid, !dtState.formaCache[tid]) +'</div></td>' +
+        '<td style="padding:7px 8px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:16px;color:var(--wh)">'+(t.pontos||0)+'</td>' +
+        '<td style="padding:7px 8px;text-align:center;color:var(--ts)">'+(t.jogos||0)+'</td>' +
+        '<td style="padding:7px 8px;text-align:center;color:var(--gr)">'+(t.vitorias||0)+'</td>' +
+        '<td style="padding:7px 8px;text-align:center;color:var(--ye)">'+(t.empates||0)+'</td>' +
+        '<td style="padding:7px 8px;text-align:center;color:var(--re)">'+(t.derrotas||0)+'</td>' +
+        '<td style="padding:7px 8px;text-align:center;color:'+(sg>0?'var(--gr)':sg<0?'var(--re)':'var(--ts)')+'">'+( sg>0?'+':'')+sg+'</td>' +
+      '</tr>';
+    });
+    s += '</tbody></table></div></div>';
+  } else {
+    s += '<div style="color:var(--ts);font-size:13px">Tabela não disponível</div>';
+  }
+
+  // Artilharia
+  s += '<div>';
+  if(dtState.artilharia && Array.isArray(dtState.artilharia) && dtState.artilharia.length > 0) {
+    s += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:10px">🥇 Artilharia do Campeonato</div>' +
+      '<div style="display:flex;flex-direction:column;gap:5px">';
+    dtState.artilharia.slice(0,12).forEach(function(a, i){
+      var jogador = a.atleta||a.jogador||a;
+      var nome = jogador.nome_popular||jogador.nome||'—';
+      var foto = jogador.foto||jogador.imagem||'';
+      var time = a.time||a.equipe||{};
+      var timeNome = time.nome_popular||time.nome||'';
+      var timeEscudo = time.escudo||time.logo||'';
+      var gols = a.gols||a.quantidade||0;
+      s += '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--c2);border:1px solid rgba(70,162,247,.07);border-radius:4px">' +
+        '<span style="font-family:Bebas Neue,sans-serif;font-size:16px;color:rgba(70,162,247,.4);width:18px;flex-shrink:0">'+(i+1)+'</span>' +
+        (foto?'<img src="'+foto+'" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0">':'') +
+        '<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:700;color:var(--wh);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nome+'</div>' +
+          '<div style="display:flex;align-items:center;gap:4px;margin-top:2px">'+(timeEscudo?'<img src="'+timeEscudo+'" style="width:12px;height:12px;object-fit:contain">':'') +
+          '<span style="font-size:9px;color:var(--ts)">'+timeNome+'</span></div>' +
+        '</div>' +
+        '<div style="font-family:Bebas Neue,sans-serif;font-size:24px;color:var(--re);line-height:1;flex-shrink:0">'+gols+'</div>' +
+      '</div>';
+    });
+    s += '</div>';
+  } else {
+    s += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:10px">Artilharia</div>' +
+      '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:16px;color:var(--ts);font-size:12px">Artilharia não disponível na API para este campeonato.</div>';
+  }
+  s += '</div>';
+
+  s += '</div>'; // fecha grid
+
+  return s + '</div>';
 }
 </script>
 
