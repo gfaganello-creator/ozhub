@@ -507,6 +507,7 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
     <a href="#calendario">Calendário</a>
     
     <a href="#plantel-perf" onclick="abrirPlantelPerf(event)">Plantel</a>
+    <a href="#dep-tecnico" onclick="abrirDepTecnico(event)">Dep. Técnico</a>
   </nav>
 </header>
 
@@ -751,10 +752,10 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
       <div class="hcard__body"><div class="hcard__label">Gestao de Elenco</div><div class="hcard__sub">Contratos &middot; Transfers</div></div>
       <div class="hcard__badge badge-live">ATIVO</div>
     </div>
-    <div class="hcard soon">
+    <div class="hcard active" onclick="abrirDepTecnico(event)">
       <div class="hcard__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div>
       <div class="hcard__body"><div class="hcard__label">Dep. Tecnico</div><div class="hcard__sub">Taticas &middot; Analise</div></div>
-      <div class="hcard__badge badge-soon">EM BREVE</div>
+      <div class="hcard__badge badge-live">ATIVO</div>
     </div>
     <div class="hcard soon">
       <div class="hcard__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div>
@@ -4731,6 +4732,337 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 
+
+
+<section id="dep-tecnico" style="display:none">
+  <div class="sh rv">
+    <div><div class="stag">Análise</div><div class="sti">Departamento Técnico</div></div>
+    <div class="sme" id="dt-sync">Carregando...</div>
+  </div>
+
+  <!-- TABS -->
+  <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap">
+    <button onclick="dtVerTab('adversario')" id="dt-btn-adversario" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:8px 16px;border-radius:3px;cursor:pointer;background:var(--az);color:var(--bk);border:none">Próx. Adversário</button>
+    <button onclick="dtVerTab('classificacao')" id="dt-btn-classificacao" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:8px 16px;border-radius:3px;cursor:pointer;background:transparent;color:var(--ts);border:1px solid rgba(70,162,247,.2)">Classificação</button>
+    <button onclick="dtVerTab('elenco')" id="dt-btn-elenco" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:8px 16px;border-radius:3px;cursor:pointer;background:transparent;color:var(--ts);border:1px solid rgba(70,162,247,.2)">Nosso Elenco</button>
+  </div>
+
+  <!-- CONTEÚDO -->
+  <div id="dt-content">
+    <div style="color:var(--ts);font-size:13px">Carregando...</div>
+  </div>
+</section>
+
+
+<script>
+// ══════════════════════════════════════
+// DEP. TÉCNICO
+// ══════════════════════════════════════
+var DT_API_KEY = 'live_14e70fe96049615c1c7760495ede62';
+var DT_API_BASE = 'https://api.api-futebol.com.br/v1';
+var DT_TAB = 'adversario';
+var dtDados = {};
+
+function abrirDepTecnico(e) {
+  if(e) e.preventDefault();
+  var el = document.getElementById('dep-tecnico');
+  if(el) {
+    el.style.display = 'block';
+    setTimeout(function(){ el.scrollIntoView({behavior:'smooth'}); }, 100);
+  }
+  dtCarregar();
+}
+
+async function dtFetch(endpoint) {
+  try {
+    var res = await fetch(DT_API_BASE + endpoint, {
+      headers: { 'Authorization': 'Bearer ' + DT_API_KEY }
+    });
+    if(!res.ok) throw new Error(res.status);
+    return await res.json();
+  } catch(e) {
+    console.warn('DT API error:', endpoint, e.message);
+    return null;
+  }
+}
+
+async function dtCarregar() {
+  document.getElementById('dt-sync').textContent = 'Carregando...';
+  try {
+    // Busca campeonatos disponíveis
+    var camps = await dtFetch('/campeonatos');
+    if(camps) {
+      // Procura Paulista A2
+      var paulistaA2 = null;
+      if(Array.isArray(camps)) {
+        paulistaA2 = camps.find(function(c){
+          return (c.nome||'').toLowerCase().indexOf('paulista') >= 0 &&
+                 (c.nome||'').toLowerCase().indexOf('a2') >= 0;
+        }) || camps.find(function(c){
+          return (c.nome||'').toLowerCase().indexOf('paulista') >= 0;
+        });
+      }
+      if(paulistaA2) {
+        dtDados.campId = paulistaA2.campeonato_id || paulistaA2.id;
+        dtDados.campNome = paulistaA2.nome;
+      }
+    }
+
+    // Busca rodadas e classificação em paralelo
+    var campId = dtDados.campId || 10;
+    var [rodadas, classif] = await Promise.all([
+      dtFetch('/campeonatos/' + campId + '/rodadas'),
+      dtFetch('/campeonatos/' + campId + '/tabela')
+    ]);
+
+    dtDados.rodadas = rodadas;
+    dtDados.classif = classif;
+
+    // Identifica próximo adversário do Osasco
+    dtDados.proxJogo = null;
+    dtDados.adversario = null;
+    if(rodadas && Array.isArray(rodadas)) {
+      var hoje = new Date();
+      rodadas.forEach(function(rodada) {
+        if(!rodada.partidas) return;
+        rodada.partidas.forEach(function(p) {
+          var times = [p.time_mandante, p.time_visitante];
+          var isOsasco = times.some(function(t){
+            return t && (t.nome||'').toLowerCase().indexOf('osasco') >= 0;
+          });
+          if(!isOsasco) return;
+          var dataStr = p.data_realizacao || p.data || '';
+          var dt = dataStr ? new Date(dataStr) : null;
+          if(dt && dt >= hoje && (!dtDados.proxJogo || dt < dtDados.proxJogo.dt)) {
+            dtDados.proxJogo = {dt:dt, partida:p};
+            dtDados.adversario = (p.time_mandante.nome||'').toLowerCase().indexOf('osasco') >= 0
+              ? p.time_visitante
+              : p.time_mandante;
+          }
+        });
+      });
+    }
+
+    document.getElementById('dt-sync').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    dtRenderTab();
+
+  } catch(e) {
+    document.getElementById('dt-sync').textContent = 'Erro ao carregar';
+    console.warn('dtCarregar error:', e);
+  }
+}
+
+function dtVerTab(tab) {
+  DT_TAB = tab;
+  ['adversario','classificacao','elenco'].forEach(function(t) {
+    var btn = document.getElementById('dt-btn-'+t);
+    if(!btn) return;
+    if(t === tab) {
+      btn.style.background = 'var(--az)';
+      btn.style.color = 'var(--bk)';
+      btn.style.border = 'none';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--ts)';
+      btn.style.border = '1px solid rgba(70,162,247,.2)';
+    }
+  });
+  dtRenderTab();
+}
+
+function dtRenderTab() {
+  if(DT_TAB === 'adversario') dtRenderAdversario();
+  else if(DT_TAB === 'classificacao') dtRenderClassificacao();
+  else if(DT_TAB === 'elenco') dtRenderElenco();
+}
+
+function dtRenderAdversario() {
+  var el = document.getElementById('dt-content');
+  if(!dtDados.proxJogo) {
+    el.innerHTML = '<div style="color:var(--ts);font-size:13px">Nenhum próximo jogo encontrado na API.</div>';
+    return;
+  }
+
+  var p = dtDados.proxJogo.partida;
+  var adv = dtDados.adversario;
+  var dtFmt = dtDados.proxJogo.dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  var dias = Math.ceil((dtDados.proxJogo.dt - new Date())/(1000*60*60*24));
+
+  // Busca últimos jogos do adversário
+  dtFetchUltimosJogos(adv);
+
+  el.innerHTML =
+    '<div class="cr rv">' +
+      // Card adversário
+      '<div class="cd" style="flex:1">' +
+        '<div class="cdt">Próximo Adversário</div>' +
+        '<div class="cds">' + dtFmt + ' · em ' + dias + ' dias</div>' +
+        '<div style="margin-top:20px">' +
+          '<div style="font-family:Bebas Neue,sans-serif;font-size:40px;color:var(--wh);letter-spacing:2px">' + (adv?adv.nome:'—') + '</div>' +
+          '<div style="font-size:11px;color:var(--ts);margin-top:4px">' +
+            (p.estadio ? '📍 ' + p.estadio : '') +
+            (p.fase ? ' · ' + p.fase : '') +
+          '</div>' +
+        '</div>' +
+        '<div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap">' +
+          '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:3px;padding:10px 16px;text-align:center">' +
+            '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Mando</div>' +
+            '<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--wh);margin-top:4px">' +
+              ((p.time_mandante.nome||'').toLowerCase().indexOf('osasco')>=0 ? 'Casa' : 'Fora') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      // Últimos jogos do adversário
+      '<div class="cd" style="flex:1.5">' +
+        '<div class="cdt">Últimos Jogos do Adversário</div>' +
+        '<div class="cds">Forma recente</div>' +
+        '<div id="dt-ultimos-adv" style="margin-top:12px"><div style="color:var(--ts);font-size:12px">Buscando...</div></div>' +
+      '</div>' +
+      // Atletas disponíveis
+      '<div class="cd" style="flex:1">' +
+        '<div class="cdt">Nossos Disponíveis</div>' +
+        '<div class="cds">Cruzamento com NSP</div>' +
+        '<div id="dt-disponiveis" style="margin-top:12px">' + dtRenderDisponiveis() + '</div>' +
+      '</div>' +
+    '</div>';
+}
+
+async function dtFetchUltimosJogos(adv) {
+  if(!adv || !adv.time_id) return;
+  var jogos = await dtFetch('/times/' + adv.time_id + '/partidas');
+  var el = document.getElementById('dt-ultimos-adv');
+  if(!el) return;
+  if(!jogos || !Array.isArray(jogos) || jogos.length === 0) {
+    el.innerHTML = '<div style="color:var(--ts);font-size:12px">Sem dados disponíveis</div>';
+    return;
+  }
+  var ultimos = jogos.filter(function(j){ return j.placar_mandante !== null; }).slice(-5);
+  var html = '<div style="display:flex;flex-direction:column;gap:6px">';
+  ultimos.forEach(function(j) {
+    var isAdv = (j.time_mandante.time_id === adv.time_id);
+    var golsAdv = isAdv ? j.placar_mandante : j.placar_visitante;
+    var golsOp  = isAdv ? j.placar_visitante : j.placar_mandante;
+    var op = isAdv ? j.time_visitante.nome : j.time_mandante.nome;
+    var venceu = golsAdv > golsOp;
+    var empatou = golsAdv === golsOp;
+    var badge = empatou ?
+      '<span style="background:rgba(245,158,11,.15);color:var(--ye);border:1px solid rgba(245,158,11,.3);font-size:9px;font-weight:700;padding:2px 8px;border-radius:2px">E</span>' :
+      venceu ?
+      '<span style="background:rgba(46,204,142,.15);color:var(--gr);border:1px solid rgba(46,204,142,.3);font-size:9px;font-weight:700;padding:2px 8px;border-radius:2px">V</span>' :
+      '<span style="background:rgba(239,68,68,.15);color:var(--re);border:1px solid rgba(239,68,68,.3);font-size:9px;font-weight:700;padding:2px 8px;border-radius:2px">D</span>';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--c2);border:1px solid rgba(70,162,247,.06);border-radius:3px">' +
+      '<div style="display:flex;align-items:center;gap:8px">' + badge +
+        '<span style="font-size:12px;color:var(--wh)">' + op + '</span></div>' +
+      '<span style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--wh)">' + golsAdv + ' x ' + golsOp + '</span>' +
+    '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function dtRenderDisponiveis() {
+  // Usa dados do NSP já carregados
+  if(!window.nspCadastro || !window.nspRecuperacao) return '<div style="color:var(--ts);font-size:12px">Abra o Plantel primeiro</div>';
+  var aptMap = {};
+  nspRecuperacao.forEach(function(r){
+    if(r['Nome']) aptMap[r['Nome']] = r['Característica']||r['Caracteristica']||'';
+  });
+  var disponiveis = nspCadastro.filter(function(r){
+    return (aptMap[r['Nome']]||'').toLowerCase().indexOf('apronto') >= 0;
+  });
+  var html = '<div style="margin-bottom:8px"><span style="font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--gr)">' + disponiveis.length + '</span> <span style="font-size:11px;color:var(--ts)">atletas aptos</span></div>';
+  html += '<div style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto">';
+  disponiveis.forEach(function(r){
+    var pos = r['Posição']||r['Posicao']||'—';
+    html += '<div style="font-size:11px;color:var(--wh);padding:4px 0;border-bottom:1px solid rgba(70,162,247,.06)">' +
+      r['Nome'] + ' <span style="color:var(--ts)">· ' + pos + '</span></div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function dtRenderClassificacao() {
+  var el = document.getElementById('dt-content');
+  if(!dtDados.classif || !Array.isArray(dtDados.classif)) {
+    el.innerHTML = '<div style="color:var(--ts);font-size:13px">Classificação não disponível.</div>';
+    return;
+  }
+  var html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
+    '<thead><tr>' +
+    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">#</th>' +
+    '<th style="padding:8px 12px;text-align:left;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">Time</th>' +
+    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">Pts</th>' +
+    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">J</th>' +
+    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">V</th>' +
+    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">E</th>' +
+    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">D</th>' +
+    '<th style="padding:8px 12px;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);border-bottom:1px solid rgba(70,162,247,.1)">SG</th>' +
+    '</tr></thead><tbody>';
+
+  dtDados.classif.forEach(function(t, i) {
+    var isOsasco = (t.time&&(t.time.nome||'').toLowerCase().indexOf('osasco')>=0);
+    var nome = t.time ? t.time.nome : (t.nome||'—');
+    html += '<tr style="border-bottom:1px solid rgba(70,162,247,.05);' + (isOsasco?'background:rgba(70,162,247,.08)':'') + '">' +
+      '<td style="padding:10px 12px;text-align:center;color:var(--ts)">' + (t.posicao||i+1) + '</td>' +
+      '<td style="padding:10px 12px;color:' + (isOsasco?'var(--az)':'var(--wh)') + ';font-weight:' + (isOsasco?'700':'400') + '">' + nome + '</td>' +
+      '<td style="padding:10px 12px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:16px;color:var(--wh)">' + (t.pontos||0) + '</td>' +
+      '<td style="padding:10px 12px;text-align:center;color:var(--ts)">' + (t.jogos||0) + '</td>' +
+      '<td style="padding:10px 12px;text-align:center;color:var(--gr)">' + (t.vitorias||0) + '</td>' +
+      '<td style="padding:10px 12px;text-align:center;color:var(--ye)">' + (t.empates||0) + '</td>' +
+      '<td style="padding:10px 12px;text-align:center;color:var(--re)">' + (t.derrotas||0) + '</td>' +
+      '<td style="padding:10px 12px;text-align:center;color:var(--ts)">' + (t.saldo_gols||0) + '</td>' +
+    '</tr>';
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+function dtRenderElenco() {
+  var el = document.getElementById('dt-content');
+  // Usa dados do NSP
+  if(!window.nspCadastro || nspCadastro.length === 0) {
+    el.innerHTML = '<div style="color:var(--ts);font-size:13px">Abra o Plantel primeiro para carregar o elenco.</div>';
+    return;
+  }
+  var aptMap = {};
+  if(window.nspRecuperacao) {
+    nspRecuperacao.forEach(function(r){
+      if(r['Nome']) aptMap[r['Nome']] = r['Característica']||r['Caracteristica']||'';
+    });
+  }
+  // Agrupa por posição
+  var porPosicao = {};
+  nspCadastro.forEach(function(r){
+    var pos = r['Posição']||r['Posicao']||'Outros';
+    if(!porPosicao[pos]) porPosicao[pos] = [];
+    porPosicao[pos].push(r);
+  });
+  var html = '<div style="display:flex;flex-direction:column;gap:20px">';
+  Object.entries(porPosicao).forEach(function(entry){
+    var pos = entry[0], atletas = entry[1];
+    html += '<div><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(70,162,247,.1)">' + pos + '</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">';
+    atletas.forEach(function(r){
+      var nome = r['Nome']||'—';
+      var lat = r['Lateralidade']||'';
+      var apt = aptMap[nome]||'';
+      var isApto = apt.toLowerCase().indexOf('apronto') >= 0;
+      var aptColor = isApto ? 'var(--gr)' : apt ? 'var(--re)' : 'var(--ts)';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--c2);border:1px solid rgba(70,162,247,.06);border-radius:3px">' +
+        '<div>' +
+          '<div style="font-size:12px;font-weight:600;color:var(--wh)">' + nome + '</div>' +
+          '<div style="font-size:10px;color:var(--ts)">' + lat + '</div>' +
+        '</div>' +
+        '<span style="font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:2px;background:' + aptColor + '20;color:' + aptColor + ';border:1px solid ' + aptColor + '40">' + (apt||'—') + '</span>' +
+      '</div>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+</script>
 
 </body>
 </html>
