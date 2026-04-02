@@ -4800,6 +4800,30 @@ var DT_LES_SID  = '1zAE3Z04cpdVrdysAIyKu0xmjjOQkbIHgUD_KDIqNVZo';
 var DT_VOLT_BASE = 'https://docs.google.com/spreadsheets/d/' + DT_VOLT_SID + '/gviz/tq?tqx=out:csv&sheet=';
 var DT_LES_BASE  = 'https://docs.google.com/spreadsheets/d/' + DT_LES_SID  + '/gviz/tq?tqx=out:csv&sheet=';
 
+// Inline CSV parser for DT block (independent of NSP)
+function dtCsvParse(txt) {
+  var ls = txt.split('\n');
+  if(ls.length < 2) return [];
+  var hs = dtCsvLine(ls[0]).map(function(h){ return h.replace(/^"|"$/g,'').trim(); });
+  return ls.slice(1).filter(function(l){ return l.trim(); }).map(function(l){
+    var vals = dtCsvLine(l);
+    var obj = {};
+    hs.forEach(function(h,i){ obj[h] = (vals[i]||'').replace(/^"|"$/g,'').trim(); });
+    return obj;
+  });
+}
+function dtCsvLine(line) {
+  var r=[], c='', q=false, i=0;
+  for(; i<line.length; i++) {
+    var ch=line[i];
+    if(ch==='"'){q=!q;}
+    else if(ch===','&&!q){r.push(c);c='';}
+    else{c+=ch;}
+  }
+  r.push(c);
+  return r;
+}
+
 
 async function dtCarregarPlantel() {
   // Se NSP já carregou, usa os dados em memória diretamente
@@ -4819,8 +4843,8 @@ async function dtCarregarPlantel() {
     ]);
     var t1 = await resArr[0].text();
     var t4 = await resArr[1].text();
-    dtState.dtCadastro    = nspParseSheet(t1).filter(function(r){ return r['Nome'] && r['Nome'].trim(); });
-    dtState.dtRecuperacao = nspParseSheet(t4).filter(function(r){ return r['Nome']; });
+    dtState.dtCadastro    = dtCsvParse(t1).filter(function(r){ return r['Nome'] && r['Nome'].trim(); });
+    dtState.dtRecuperacao = dtCsvParse(t4).filter(function(r){ return r['Nome']; });
   } catch(e) {
     dtState.dtCadastro    = [];
     dtState.dtRecuperacao = [];
@@ -4926,11 +4950,15 @@ async function dtCarregar() {
     if(!dtState.campId) {
       var camps = await dtFetch('/campeonatos');
       if(camps && Array.isArray(camps)) {
+        // Prefer active (andamento) A2, then most recent A2
         var match = camps.find(function(c){
           var n = (c.nome||c.nome_popular||'').toLowerCase();
-          return n.indexOf('paulista') >= 0 && n.indexOf('a2') >= 0;
+          return n.indexOf('paulista') >= 0 && n.indexOf('a2') >= 0 && c.status === 'andamento';
         }) || camps.find(function(c){
-          return (c.nome||c.nome_popular||'').toLowerCase().indexOf('paulista') >= 0;
+          var n = (c.nome||c.nome_popular||'').toLowerCase();
+          return n.indexOf('paulista') >= 0 && (n.indexOf('a2') >= 0 || n.indexOf('segunda') >= 0);
+        }) || camps.find(function(c){
+          return (c.nome||c.nome_popular||'').toLowerCase().indexOf('paulista') >= 0 && c.status === 'andamento';
         });
         if(match) {
           dtState.campId = match.campeonato_id || match.id;
@@ -4939,7 +4967,7 @@ async function dtCarregar() {
           if(cn) cn.textContent = dtState.campNome;
         }
       }
-      if(!dtState.campId) dtState.campId = 34;
+      if(!dtState.campId) dtState.campId = 40; // fallback: Paulista A2 2025
     }
     var cid = dtState.campId;
 
@@ -4977,9 +5005,10 @@ async function dtCarregar() {
         partidas.forEach(function(p) {
           var mand = p.time_mandante||p.mandante||{};
           var visit = p.time_visitante||p.visitante||{};
-          var mNome = (mand.nome_popular||mand.nome||'').toLowerCase();
-          var vNome = (visit.nome_popular||visit.nome||'').toLowerCase();
-          var isOsasco = mNome.indexOf('osasco')>=0 || vNome.indexOf('osasco')>=0;
+          var mNome = (mand.nome_popular||mand.nome||mand.nome_abreviacao||'').toLowerCase();
+          var vNome = (visit.nome_popular||visit.nome||visit.nome_abreviacao||'').toLowerCase();
+          var isOsasco = mNome.indexOf('osasco')>=0 || vNome.indexOf('osasco')>=0 ||
+                         mNome.indexOf('oeste')>=0 || vNome.indexOf('oeste')>=0;
           if(!isOsasco) return;
 
           // Identificar ID do Osasco
