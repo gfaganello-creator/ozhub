@@ -4738,10 +4738,9 @@ document.addEventListener('DOMContentLoaded', function(){
   <div class="el-header">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
       <button onclick="hubVoltarDT()" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);background:none;border:1px solid rgba(70,162,247,.2);border-radius:3px;padding:7px 14px;cursor:pointer">&#8592; Hub</button>
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:12px">
         <span id="dt-sync" style="font-size:10px;color:var(--ts)">Carregando...</span>
         <button onclick="dtCarregar()" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:3px;cursor:pointer;background:rgba(70,162,247,.1);color:var(--az);border:1px solid rgba(70,162,247,.25)">&#8635; Atualizar</button>
-        <button onclick="dtMostrarDebug()" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:3px;cursor:pointer;background:rgba(245,158,11,.08);color:var(--ye);border:1px solid rgba(245,158,11,.25)">&#128269; Debug API</button>
       </div>
     </div>
     <div class="el-title">DEP. <em>TÉCNICO</em></div>
@@ -4749,36 +4748,40 @@ document.addEventListener('DOMContentLoaded', function(){
   </div>
   <div class="el-body" id="dt-dashboard">
     <div style="color:var(--ts);font-size:13px;padding:60px 0;text-align:center">
-      <div style="font-family:Bebas Neue,sans-serif;font-size:32px;color:var(--az);margin-bottom:8px">Conectando à API Futebol...</div>
-      <div>Carregando classificação, rodadas e dados dos adversários</div>
+      <div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--az);margin-bottom:8px">Conectando...</div>
+      <div>Carregando dados do Paulista A2 2026</div>
     </div>
-  </div>
-  <div id="dt-debug" style="display:none;background:rgba(0,0,0,.5);border:1px solid rgba(245,158,11,.3);border-radius:6px;margin:0 32px 32px;padding:20px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ye)">Debug API — Campeonatos disponíveis</div>
-      <button onclick="document.getElementById('dt-debug').style.display='none'" style="background:none;border:1px solid rgba(70,162,247,.2);border-radius:3px;color:var(--ts);cursor:pointer;padding:3px 8px;font-size:12px">fechar</button>
-    </div>
-    <div id="dt-debug-content" style="font-family:monospace;font-size:11px;color:var(--wh);white-space:pre-wrap;max-height:400px;overflow-y:auto;line-height:1.6"></div>
   </div>
 </div>
 
 <script>
 // ══════════════════════════════════════
-// DEP. TÉCNICO v4 — Central de Análise
+// DEP. TÉCNICO v5 — Central de Análise
 // ══════════════════════════════════════
-var DT_API_KEY = 'test_7ae1b35cc9b88a4acddb430c4ce3f7';
+var DT_API_KEY  = 'live_14e70fe96049615c1c7760495ede62';
 var DT_API_BASE = 'https://api.api-futebol.com.br/v1';
+
+// IDs conhecidos do Paulista A2 (ordem: mais novo primeiro)
+// A chave test_ só tem acesso ao Série B (ID 14).
+// Com chave live_ esses IDs funcionam:
+// Paulista A2 2026 = buscar via /campeonatos quando disponível
+// Paulista A2 2025 = 40 (encerrado, Capivariano campeão)
+// Paulista A2 2024 = 34 (encerrado)
+var DT_CAMP_IDS_A2 = [40]; // expandir quando tiver chave live com acesso ao A2 2026
+
 var dtState = {
-  campId: null, campNome: '',
+  campId: null, campNome: 'Paulista A2',
   classif: null, rodadas: null,
   proxJogo: null, adversario: null,
   jogosOsasco: [],
   artilharia: null,
-  formaCache: {},     // tid -> [{gN,gO,v,e,op}]
-  partidasCache: {},  // partida_id -> stats detalhadas
-  osascoTid: null
+  formaCache: {},
+  osascoTid: null,
+  dtCadastro: null,
+  dtRecuperacao: null
 };
 
+// ── Navegação ──
 function abrirDepTecnico(e) {
   if(e) e.preventDefault();
   document.getElementById('tela-hub').style.display = 'none';
@@ -4794,63 +4797,21 @@ function hubVoltarDT() {
   window.scrollTo(0, 0);
 }
 
-async function dtMostrarDebug() {
-  var dbg = document.getElementById('dt-debug');
-  var dbgContent = document.getElementById('dt-debug-content');
-  dbg.style.display = 'block';
-  dbgContent.textContent = 'Buscando /campeonatos...';
+// ── API ──
+async function dtFetch(endpoint) {
   try {
-    var res = await fetch('https://api.api-futebol.com.br/v1/campeonatos', {
-      headers: { 'Authorization': 'Bearer test_7ae1b35cc9b88a4acddb430c4ce3f7' }
+    var res = await fetch(DT_API_BASE + endpoint, {
+      headers: { 'Authorization': 'Bearer ' + DT_API_KEY }
     });
-    var data = await res.json();
-    // Show summary of all campeonatos
-    var lines = ['Status HTTP: ' + res.status, 'Total campeonatos: ' + (Array.isArray(data) ? data.length : 'N/A (objeto)'), ''];
-    if(Array.isArray(data)) {
-      data.forEach(function(c) {
-        lines.push('ID: ' + (c.campeonato_id||c.id) + ' | ' + (c.nome||c.nome_popular||'?') + ' | status: ' + (c.status||'?'));
-      });
-    } else {
-      lines.push(JSON.stringify(data, null, 2));
-    }
-    dbgContent.textContent = lines.join('\n');
-    // Also log what we selected
-    lines.push('');
-    lines.push('=== SELECIONADO ===');
-    lines.push('campId: ' + dtState.campId);
-    lines.push('campNome: ' + dtState.campNome);
-    dbgContent.textContent = lines.join('\n');
+    if(!res.ok) throw new Error(res.status);
+    return await res.json();
   } catch(e) {
-    dbgContent.textContent = 'Erro: ' + e.message;
+    console.warn('[DT]', endpoint, e.message);
+    return null;
   }
 }
 
-async function dtFetch(endpoint) {
-  try {
-    var res = await fetch(DT_API_BASE + endpoint, { headers: { 'Authorization': 'Bearer ' + DT_API_KEY } });
-    if(!res.ok) throw new Error(res.status);
-    return await res.json();
-  } catch(e) { console.warn('DT API:', endpoint, e.message); return null; }
-}
-
-// ── Carrega Plantel direto da Volt (independente do NSP estar aberto) ──
-var DT_VOLT_SID = '1O1Mx6wbrd1pGNpim0-OnWcymwqIuUKbrLBA8GipoF28';
-var DT_LES_SID  = '1zAE3Z04cpdVrdysAIyKu0xmjjOQkbIHgUD_KDIqNVZo';
-var DT_VOLT_BASE = 'https://docs.google.com/spreadsheets/d/' + DT_VOLT_SID + '/gviz/tq?tqx=out:csv&sheet=';
-var DT_LES_BASE  = 'https://docs.google.com/spreadsheets/d/' + DT_LES_SID  + '/gviz/tq?tqx=out:csv&sheet=';
-
-// Inline CSV parser for DT block (independent of NSP)
-function dtCsvParse(txt) {
-  var ls = txt.split('\n');
-  if(ls.length < 2) return [];
-  var hs = dtCsvLine(ls[0]).map(function(h){ return h.replace(/^"|"$/g,'').trim(); });
-  return ls.slice(1).filter(function(l){ return l.trim(); }).map(function(l){
-    var vals = dtCsvLine(l);
-    var obj = {};
-    hs.forEach(function(h,i){ obj[h] = (vals[i]||'').replace(/^"|"$/g,'').trim(); });
-    return obj;
-  });
-}
+// ── CSV parser próprio (sem depender do NSP) ──
 function dtCsvLine(line) {
   var r=[], c='', q=false, i=0;
   for(; i<line.length; i++) {
@@ -4862,140 +4823,141 @@ function dtCsvLine(line) {
   r.push(c);
   return r;
 }
+function dtCsvParse(txt) {
+  var ls = txt.split('\n');
+  if(ls.length < 2) return [];
+  var hs = dtCsvLine(ls[0]).map(function(h){ return h.replace(/^"|"$/g,'').trim(); });
+  return ls.slice(1).filter(function(l){ return l.trim(); }).map(function(l){
+    var vals = dtCsvLine(l);
+    var obj = {};
+    hs.forEach(function(h,i){ obj[h] = (vals[i]||'').replace(/^"|"$/g,'').trim(); });
+    return obj;
+  });
+}
 
+// ── Plantel da Volt (independente do NSP) ──
+var DT_VOLT_SID = '1O1Mx6wbrd1pGNpim0-OnWcymwqIuUKbrLBA8GipoF28';
+var DT_LES_SID  = '1zAE3Z04cpdVrdysAIyKu0xmjjOQkbIHgUD_KDIqNVZo';
+var DT_VOLT_BASE = 'https://docs.google.com/spreadsheets/d/'+DT_VOLT_SID+'/gviz/tq?tqx=out:csv&sheet=';
+var DT_LES_BASE  = 'https://docs.google.com/spreadsheets/d/'+DT_LES_SID+'/gviz/tq?tqx=out:csv&sheet=';
 
 async function dtCarregarPlantel() {
-  // Se NSP já carregou, usa os dados em memória diretamente
+  // Reutiliza dados do NSP se já carregados
   if(window.nspCadastro && nspCadastro.length > 0) {
     dtState.dtCadastro    = nspCadastro;
-    dtState.dtRecuperacao = nspRecuperacao || [];
-    // Atualiza o bloco de plantel se já estiver renderizado
-    var el = document.getElementById('dt-plantel-content');
-    if(el) el.innerHTML = dtPlantelHtml();
-    return;
+    dtState.dtRecuperacao = window.nspRecuperacao || [];
+  } else {
+    try {
+      var resArr = await Promise.all([
+        fetch(DT_VOLT_BASE + encodeURIComponent('Cadastro')),
+        fetch(DT_LES_BASE  + encodeURIComponent('BD Recuperação e Prontidão'))
+      ]);
+      var t1 = await resArr[0].text();
+      var t4 = await resArr[1].text();
+      dtState.dtCadastro    = dtCsvParse(t1).filter(function(r){ return r['Nome'] && r['Nome'].trim(); });
+      dtState.dtRecuperacao = dtCsvParse(t4).filter(function(r){ return r['Nome']; });
+    } catch(e) {
+      console.warn('[DT plantel]', e);
+      dtState.dtCadastro    = [];
+      dtState.dtRecuperacao = [];
+    }
   }
-  // Senão, busca direto da Volt
-  try {
-    var resArr = await Promise.all([
-      fetch(DT_VOLT_BASE + encodeURIComponent('Cadastro')),
-      fetch(DT_LES_BASE  + encodeURIComponent('BD Recuperação e Prontidão'))
-    ]);
-    var t1 = await resArr[0].text();
-    var t4 = await resArr[1].text();
-    dtState.dtCadastro    = dtCsvParse(t1).filter(function(r){ return r['Nome'] && r['Nome'].trim(); });
-    dtState.dtRecuperacao = dtCsvParse(t4).filter(function(r){ return r['Nome']; });
-  } catch(e) {
-    dtState.dtCadastro    = [];
-    dtState.dtRecuperacao = [];
-    console.warn('dtCarregarPlantel:', e);
+  // Log para debug
+  var rec = dtState.dtRecuperacao || [];
+  if(rec.length > 0) {
+    var cols = Object.keys(rec[0]);
+    console.log('[DT plantel] Recuperacao colunas:', cols);
+    console.log('[DT plantel] Primeiro registro:', JSON.stringify(rec[0]));
+    var vals = {};
+    rec.forEach(function(r){
+      var apt = r['Característica']||r['Caracteristica']||r['Aptidão']||r['Status']||'';
+      if(apt) vals[apt] = true;
+    });
+    console.log('[DT plantel] Valores de aptidão únicos:', Object.keys(vals));
   }
-  // Atualiza o bloco de plantel se já estiver renderizado
+  // Atualiza bloco de plantel
   var el = document.getElementById('dt-plantel-content');
   if(el) el.innerHTML = dtPlantelHtml();
 }
 
-// ── Gera HTML do plantel (usa dtState.dtCadastro / dtState.dtRecuperacao) ──
 function dtPlantelHtml() {
   var cadastro    = dtState.dtCadastro    || (window.nspCadastro    ? nspCadastro    : []);
   var recuperacao = dtState.dtRecuperacao || (window.nspRecuperacao ? nspRecuperacao : []);
-
   if(cadastro.length === 0) {
-    return '<div style="color:var(--ts);font-size:12px">Carregando dados do plantel...</div>';
+    return '<div style="color:var(--ts);font-size:12px">Carregando plantel...</div>';
   }
-
+  // Mapa de aptidão por nome
   var aptMap = {};
   recuperacao.forEach(function(r){
-    if(r['Nome']) {
-      // Try multiple possible column names for aptidão
-      var apt = r['Característica']||r['Caracteristica']||r['Status']||r['Aptidão']||r['Aptidao']||r['Caracteristicas']||'';
-      aptMap[r['Nome'].trim()] = apt;
-    }
+    var nome = (r['Nome']||'').trim();
+    if(!nome) return;
+    var apt = r['Característica']||r['Caracteristica']||r['Aptidão']||r['Aptidao']||r['Status']||'';
+    aptMap[nome] = apt;
   });
-
-  // Debug: log first few entries to console
-  var aptKeys = Object.keys(aptMap);
-  if(aptKeys.length > 0) {
-    console.log('[DT Plantel] Recuperacao sheet - first 5 entries:', JSON.stringify(aptKeys.slice(0,5).map(function(k){ return k + ': ' + aptMap[k]; })));
-    // Log unique values found
-    var uniqueVals = {};
-    aptKeys.forEach(function(k){ uniqueVals[aptMap[k]] = true; });
-    console.log('[DT Plantel] Unique status values:', Object.keys(uniqueVals));
-  } else {
-    console.warn('[DT Plantel] aptMap is empty! Recuperacao rows:', recuperacao.length);
-    if(recuperacao.length > 0) console.log('[DT Plantel] First row keys:', Object.keys(recuperacao[0]));
-  }
-
-  var aptos = [], rehab = [];
+  var aptos=[], rehab=[];
   var porPos = {};
   cadastro.forEach(function(r){
-    var nomeLimpo = (r['Nome']||'').trim();
-    var apt = aptMap[nomeLimpo]||'';
-    var aptLower = apt.toLowerCase();
-    var pos = r['Posição']||r['Posicao']||r['Posicão']||'Outros';
-    var obj = { nome:nomeLimpo, pos:pos, apt:apt, lat:r['Lateralidade']||'' };
-    // Check for apronto variations
-    if(aptLower.indexOf('apronto')>=0 || aptLower.indexOf('apto')>=0 || aptLower === 'disponivel' || aptLower === 'disponível') {
+    var nome = (r['Nome']||'').trim();
+    if(!nome) return;
+    var apt = aptMap[nome] || '';
+    var aptLow = apt.toLowerCase();
+    var pos = r['Posição']||r['Posicao']||r['Posição ']||'Outros';
+    var obj = { nome:nome, pos:pos.trim(), apt:apt, lat:r['Lateralidade']||'' };
+    if(aptLow.indexOf('apronto')>=0 || aptLow === 'apto' || aptLow === 'disponivel' || aptLow === 'disponível') {
       aptos.push(obj);
-      if(!porPos[pos]) porPos[pos] = [];
-      porPos[pos].push(obj);
-    } else if(apt && aptLower.indexOf('rehab')>=0 || aptLower.indexOf('reab')>=0 || aptLower.indexOf('lesão')>=0 || aptLower.indexOf('tratamento')>=0 || aptLower.indexOf('recup')>=0) {
-      rehab.push(obj);
+      if(!porPos[obj.pos]) porPos[obj.pos]=[];
+      porPos[obj.pos].push(obj);
     } else if(apt) {
-      rehab.push(obj); // qualquer status não-apto vai para rehab
+      rehab.push(obj);
     }
   });
-
-  var html = '';
-
-  // KPIs
-  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">' +
+  var html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">' +
     '<div style="background:rgba(46,204,142,.08);border:1px solid rgba(46,204,142,.2);border-radius:6px;padding:16px;text-align:center">' +
       '<div style="font-family:Bebas Neue,sans-serif;font-size:48px;color:var(--gr);line-height:1">'+aptos.length+'</div>' +
       '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(46,204,142,.7);margin-top:4px">Aptos para Jogar</div>' +
     '</div>' +
     '<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:16px;text-align:center">' +
       '<div style="font-family:Bebas Neue,sans-serif;font-size:48px;color:var(--ye);line-height:1">'+rehab.length+'</div>' +
-      '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(245,158,11,.7);margin-top:4px">Em Reabilitação</div>' +
+      '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(245,158,11,.7);margin-top:4px">Em Reabilitacao</div>' +
     '</div>' +
     '<div style="background:rgba(70,162,247,.05);border:1px solid rgba(70,162,247,.15);border-radius:6px;padding:16px;text-align:center">' +
       '<div style="font-family:Bebas Neue,sans-serif;font-size:48px;color:var(--wh);line-height:1">'+cadastro.length+'</div>' +
       '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);margin-top:4px">Total no Plantel</div>' +
     '</div>' +
   '</div>';
-
-  // Aptos por posição
   if(aptos.length > 0) {
     html += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:20px;margin-bottom:10px">' +
-      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:14px"> Disponíveis por Posição</div>' +
+      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:14px">Disponiveis por Posicao</div>' +
       '<div style="display:flex;flex-direction:column;gap:10px">';
     var posOrder = ['Goleiro','Lateral Dir.','Lateral Esq.','Zagueiro','Volante','Meia','Atacante'];
     var allPos = posOrder.concat(Object.keys(porPos).filter(function(p){ return posOrder.indexOf(p)<0; }));
     allPos.forEach(function(pos){
-      if(!porPos[pos] || porPos[pos].length === 0) return;
+      if(!porPos[pos]||porPos[pos].length===0) return;
       html += '<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">' +
-        '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ts);min-width:80px;padding-top:4px">'+pos+'</div>' +
+        '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ts);min-width:80px;padding-top:5px">'+pos+'</div>' +
         '<div style="display:flex;flex-wrap:wrap;gap:6px">';
       porPos[pos].forEach(function(a){
-        html += '<span style="font-size:12px;font-weight:600;color:var(--wh);background:rgba(46,204,142,.1);border:1px solid rgba(46,204,142,.2);padding:3px 10px;border-radius:3px">'+
-          a.nome + (a.lat ? ' <span style="font-size:9px;opacity:.55">'+a.lat+'</span>' : '') + '</span>';
+        html += '<span style="font-size:12px;font-weight:600;color:var(--wh);background:rgba(46,204,142,.1);border:1px solid rgba(46,204,142,.2);padding:3px 10px;border-radius:3px">'+a.nome+'</span>';
       });
       html += '</div></div>';
     });
     html += '</div></div>';
+  } else {
+    // Se 0 aptos, mostra aviso com info de debug
+    html += '<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:16px;margin-bottom:10px">' +
+      '<div style="font-size:11px;font-weight:700;color:var(--ye);margin-bottom:6px">Sem aptos identificados</div>' +
+      '<div style="font-size:11px;color:var(--ts)">A planilha Recuperacao tem '+recuperacao.length+' registros. Verifique o console (F12) para ver os valores de aptidao disponiveis e ajuste a deteccao.</div>' +
+    '</div>';
   }
-
-  // Em Rehab
   if(rehab.length > 0) {
-    html += '<div style="background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:16px 20px">' +
-      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--re);opacity:.8;margin-bottom:10px">Rehab — Reabilitação — Indisponíveis</div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    html += '<div style="background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:14px 18px">' +
+      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--re);opacity:.8;margin-bottom:8px">Reabilitacao</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:5px">';
     rehab.forEach(function(a){
-      html += '<span title="'+a.apt+'" style="font-size:11px;color:rgba(240,244,248,.5);background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);padding:3px 10px;border-radius:3px">'+
-        a.nome+' <span style="font-size:9px;opacity:.6">'+a.pos+'</span></span>';
+      html += '<span title="'+a.apt+'" style="font-size:11px;color:rgba(240,244,248,.5);background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);padding:2px 8px;border-radius:3px">'+a.nome+'</span>';
     });
     html += '</div></div>';
   }
-
   return html;
 }
 
@@ -5004,781 +4966,356 @@ async function dtCarregar() {
   var syncEl = document.getElementById('dt-sync');
   var dash = document.getElementById('dt-dashboard');
   if(syncEl) syncEl.textContent = 'Carregando...';
-  dash.innerHTML = '<div style="color:var(--ts);font-size:13px;padding:60px 0;text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--az);margin-bottom:8px">Conectando...</div><div>Buscando campeonato e dados dos adversários</div></div>';
-
+  dash.innerHTML = '<div style="color:var(--ts);font-size:13px;padding:60px 0;text-align:center">' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--az);margin-bottom:8px">Conectando...</div>' +
+    '<div>Buscando dados do campeonato</div></div>';
   try {
-    // 1. Descobrir campeonato — tenta dinâmico, fallback para IDs conhecidos
+    // 1. Descobrir campeonato ativo
     if(!dtState.campId) {
       var camps = await dtFetch('/campeonatos');
-      // Debug: mostrar todos os campeonatos disponíveis no console
       if(camps && Array.isArray(camps)) {
-        console.log('[DT] Campeonatos disponíveis:', JSON.stringify(camps.map(function(c){
-          return { id: c.campeonato_id||c.id, nome: c.nome||c.nome_popular, status: c.status };
-        })));
-        // Preferência: ativo > A2 > Paulista
+        // Preferir Paulista A2 ativo
         var match = camps.find(function(c){
           var n = (c.nome||c.nome_popular||'').toLowerCase();
-          return (n.indexOf('paulista') >= 0 || n.indexOf('paulistao') >= 0) &&
-                 (n.indexOf('a2') >= 0 || n.indexOf('segunda') >= 0 || n.indexOf('2.') >= 0) &&
-                 (c.status === 'andamento' || c.status === 'em_andamento');
+          return n.indexOf('paulista')>=0 && n.indexOf('a2')>=0 && c.status==='andamento';
         }) || camps.find(function(c){
           var n = (c.nome||c.nome_popular||'').toLowerCase();
-          return (n.indexOf('paulista') >= 0) &&
-                 (n.indexOf('a2') >= 0 || n.indexOf('segunda') >= 0) &&
-                 c.status !== 'encerrado';
-        }) || camps.find(function(c){
-          var n = (c.nome||c.nome_popular||'').toLowerCase();
-          return n.indexOf('paulista') >= 0 && n.indexOf('a2') >= 0;
+          return n.indexOf('paulista')>=0 && n.indexOf('a2')>=0;
         });
         if(match) {
-          dtState.campId = match.campeonato_id || match.id;
-          dtState.campNome = match.nome || match.nome_popular || 'Paulista A2';
-          var cn = document.getElementById('dt-camp-nome');
-          if(cn) cn.textContent = dtState.campNome;
+          dtState.campId   = match.campeonato_id||match.id;
+          dtState.campNome = match.nome||match.nome_popular||'Paulista A2';
         }
       }
-      // Se não achou dinamicamente, tenta IDs conhecidos em ordem (mais novo primeiro)
-      if(!dtState.campId) {
-        var idsParaTentar = [68, 65, 62, 59, 56, 53, 50, 47, 44, 41, 40];
-        for(var ki=0; ki<idsParaTentar.length; ki++) {
-          var testId = idsParaTentar[ki];
-          var testCamp = await dtFetch('/campeonatos/' + testId);
-          if(testCamp) {
-            var testNome = (testCamp.nome||testCamp.nome_popular||'').toLowerCase();
-            if(testNome.indexOf('paulista') >= 0 && testNome.indexOf('a2') >= 0) {
-              dtState.campId = testId;
-              dtState.campNome = testCamp.nome || testCamp.nome_popular || 'Paulista A2';
-              console.log('[DT] Achei Paulista A2 no ID:', testId, dtState.campNome);
-              var cn = document.getElementById('dt-camp-nome');
-              if(cn) cn.textContent = dtState.campNome;
-              break;
-            }
-          }
-        }
-      }
-      if(!dtState.campId) {
-        dtState.campId = 40;
-        console.warn('[DT] Usando fallback ID 40 (Paulista A2 2025)');
-      }
+      // Se a chave não tem acesso ao A2, usa ID 40 (A2 2025 - encerrado mas mostra dados)
+      if(!dtState.campId) dtState.campId = 40;
+      var cn = document.getElementById('dt-camp-nome');
+      if(cn) cn.textContent = dtState.campNome;
     }
     var cid = dtState.campId;
-
-    // 2. Carregar tudo em paralelo
+    // 2. Carregar dados em paralelo
     var results = await Promise.all([
-      dtFetch('/campeonatos/' + cid + '/tabela'),
-      dtFetch('/campeonatos/' + cid + '/fases'),
-      dtFetch('/campeonatos/' + cid + '/artilharia')
+      dtFetch('/campeonatos/'+cid+'/tabela'),
+      dtFetch('/campeonatos/'+cid+'/fases'),
+      dtFetch('/campeonatos/'+cid+'/artilharia')
     ]);
-    dtState.classif = dtNormalizaClassif(results[0]);
-    var fazes = results[1];
+    dtState.classif    = dtNormClassif(results[0]);
+    var fazes          = results[1];
     dtState.artilharia = results[2];
-
     // 3. Rodadas
     var rodadas = null;
-    if(fazes && Array.isArray(fazes) && fazes.length > 0) {
-      var faseAtiva = fazes.find(function(f){ return f.status === 'andamento'; }) || fazes[fazes.length-1];
+    if(fazes && Array.isArray(fazes) && fazes.length>0) {
+      var faseAtiva = fazes.find(function(f){ return f.status==='andamento'; })||fazes[fazes.length-1];
       if(faseAtiva) {
-        var fd = await dtFetch('/campeonatos/' + cid + '/fases/' + (faseAtiva.fase_id||faseAtiva.id));
-        if(fd && fd.rodadas) rodadas = fd.rodadas;
-        else if(Array.isArray(fd)) rodadas = fd;
+        var fd = await dtFetch('/campeonatos/'+cid+'/fases/'+(faseAtiva.fase_id||faseAtiva.id));
+        if(fd && fd.rodadas) rodadas=fd.rodadas;
+        else if(Array.isArray(fd)) rodadas=fd;
       }
     }
-    if(!rodadas) rodadas = await dtFetch('/campeonatos/' + cid + '/rodadas');
+    if(!rodadas) rodadas = await dtFetch('/campeonatos/'+cid+'/rodadas');
     dtState.rodadas = rodadas;
-
-    // 4. Parsear jogos do Osasco + identificar próximo jogo
-    dtState.proxJogo = null; dtState.adversario = null;
-    dtState.jogosOsasco = [];
+    // 4. Jogos do Osasco
+    dtState.proxJogo=null; dtState.adversario=null; dtState.jogosOsasco=[];
     var hoje = new Date();
-
     if(rodadas && Array.isArray(rodadas)) {
-      rodadas.forEach(function(rodada) {
-        var partidas = rodada.partidas || rodada.jogos || [];
-        partidas.forEach(function(p) {
+      rodadas.forEach(function(rod){
+        var partidas = rod.partidas||rod.jogos||[];
+        partidas.forEach(function(p){
           var mand = p.time_mandante||p.mandante||{};
-          var visit = p.time_visitante||p.visitante||{};
-          var mNome = (mand.nome_popular||mand.nome||mand.nome_abreviacao||'').toLowerCase();
-          var vNome = (visit.nome_popular||visit.nome||visit.nome_abreviacao||'').toLowerCase();
-          var isOsasco = mNome.indexOf('osasco')>=0 || vNome.indexOf('osasco')>=0 ||
-                         mNome.indexOf('oeste')>=0 || vNome.indexOf('oeste')>=0;
-          if(!isOsasco) return;
-
-          // Identificar ID do Osasco
-          if(!dtState.osascoTid) {
-            if(mNome.indexOf('osasco')>=0) dtState.osascoTid = mand.time_id||mand.id;
-            else dtState.osascoTid = visit.time_id||visit.id;
-          }
-
-          var dataStr = p.data_realizacao||p.data_hora||p.data||'';
-          var dt = dataStr ? new Date(dataStr.replace(' ','T')) : null;
-          var jogado = p.placar_mandante !== null && p.placar_mandante !== undefined && p.placar_mandante !== '';
-          var emCasa = mNome.indexOf('osasco')>=0;
-          var adv = emCasa ? visit : mand;
-
-          dtState.jogosOsasco.push({
-            dt:dt, partida:p, rodada:rodada.nome||('Rd '+(rodada.rodada||rodada.rodada_id||'')),
-            adversario:adv, jogado:jogado, emCasa:emCasa
-          });
-
-          if(dt && dt >= hoje && !jogado && (!dtState.proxJogo || dt < dtState.proxJogo.dt)) {
-            dtState.proxJogo = { dt:dt, partida:p, rodada:rodada.nome||'' };
-            dtState.adversario = adv;
+          var visit= p.time_visitante||p.visitante||{};
+          var mN = (mand.nome_popular||mand.nome||'').toLowerCase();
+          var vN = (visit.nome_popular||visit.nome||'').toLowerCase();
+          var isOs = mN.indexOf('osasco')>=0||vN.indexOf('osasco')>=0||mN.indexOf('oeste')>=0||vN.indexOf('oeste')>=0;
+          if(!isOs) return;
+          if(!dtState.osascoTid) dtState.osascoTid = mN.indexOf('osasco')>=0||(mN.indexOf('oeste')>=0) ? (mand.time_id||mand.id) : (visit.time_id||visit.id);
+          var dStr = p.data_realizacao||p.data_hora||p.data||'';
+          var dt   = dStr ? new Date(dStr.replace(' ','T')) : null;
+          var jogado = p.placar_mandante!==null && p.placar_mandante!==undefined && p.placar_mandante!=='';
+          var emCasa = mN.indexOf('osasco')>=0||mN.indexOf('oeste')>=0;
+          var adv    = emCasa ? visit : mand;
+          dtState.jogosOsasco.push({dt:dt,partida:p,rodada:rod.nome||('Rd '+(rod.rodada||'')),adversario:adv,jogado:jogado,emCasa:emCasa});
+          if(dt&&dt>=hoje&&!jogado&&(!dtState.proxJogo||dt<dtState.proxJogo.dt)){
+            dtState.proxJogo={dt:dt,partida:p,rodada:rod.nome||''};
+            dtState.adversario=adv;
           }
         });
       });
     }
-
-    // Ordenar jogos por data
     dtState.jogosOsasco.sort(function(a,b){ return (a.dt||0)-(b.dt||0); });
-
-    // 5. Renderizar dashboard base
-    if(syncEl) syncEl.textContent = 'Base carregada · enriquecendo...';
+    if(syncEl) syncEl.textContent = 'Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     dtRenderDashboard();
-
-    // 6. Carregar plantel da Volt diretamente
     dtCarregarPlantel();
-
-    // 6. Enriquecer assincronamente (forma dos times, detalhes de partidas)
     dtEnriquecerAsync();
-
-    if(syncEl) syncEl.textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-
   } catch(e) {
-    if(syncEl) syncEl.textContent = 'Erro: ' + e.message;
-    dash.innerHTML = '<div style="color:var(--re);font-size:13px;padding:40px">Erro ao carregar dados: ' + e.message + '</div>';
+    console.error('[DT]', e);
+    if(syncEl) syncEl.textContent = 'Erro: '+e.message;
+    dash.innerHTML = '<div style="color:var(--re);padding:40px">Erro: '+e.message+'</div>';
   }
 }
 
-// Enriquecimento async: busca forma dos times sequencialmente
-async function dtEnriquecerAsync() {
-  // ── 1. Forma de todos os times (paralelo em lotes) ──
-  var times = {};
-  if(dtState.classif) {
-    dtState.classif.forEach(function(t) {
-      var tObj = t.time||t;
-      var tid = tObj.time_id||tObj.id;
-      if(tid && !times[tid]) times[tid] = tObj;
-    });
-  }
-  var tids = Object.keys(times);
-  // Buscar em lotes de 4 para não sobrecarregar
-  for(var i=0; i<tids.length; i+=4) {
-    var lote = tids.slice(i, i+4);
-    await Promise.all(lote.map(async function(tid) {
-      if(dtState.formaCache[tid]) return;
-      var jogos = await dtFetch('/times/' + tid + '/partidas');
-      if(!jogos || !Array.isArray(jogos)) return;
-      var jogados = jogos.filter(function(j){
-        return j.placar_mandante !== null && j.placar_mandante !== undefined && j.placar_mandante !== '';
-      });
-      dtState.formaCache[tid] = jogados.slice(-5).map(function(j){
-        var mand = j.time_mandante||j.mandante||{};
-        var visit = j.time_visitante||j.visitante||{};
-        var isM = (mand.time_id||mand.id) == tid;
-        var gN = isM ? (j.placar_mandante||0) : (j.placar_visitante||0);
-        var gO = isM ? (j.placar_visitante||0) : (j.placar_mandante||0);
-        var opNome = isM ? (visit.nome_popular||visit.nome||'?') : (mand.nome_popular||mand.nome||'?');
-        return { gN:gN, gO:gO, v:gN>gO, e:gN===gO, op:opNome };
-      });
-      document.querySelectorAll('.dt-forma-' + tid).forEach(function(el){
-        el.innerHTML = dtFormaHtml(tid, false);
-      });
-      if(dtState.adversario && (dtState.adversario.time_id||dtState.adversario.id) == tid) {
-        var advForm = document.getElementById('dt-adv-forma-detalhada');
-        if(advForm) advForm.innerHTML = dtAdvFormaDetalhada(dtState.adversario);
-      }
-    }));
-  }
-
-  // ── 2. Elenco detalhado do adversário (produção) ──
-  if(dtState.adversario) {
-    var advTid = dtState.adversario.time_id||dtState.adversario.id;
-    if(advTid && !dtState.elencoAdv) {
-      var elenco = await dtFetch('/times/' + advTid + '/elenco');
-      if(elenco) {
-        dtState.elencoAdv = elenco;
-        var el = document.getElementById('dt-elenco-adv');
-        if(el) el.innerHTML = dtRenderElencoAdv(elenco);
-      }
-    }
-  }
-
-  // ── 3. Estatísticas dos últimos jogos do Osasco (por partida) ──
-  if(dtState.osascoTid && !dtState.statsOsasco) {
-    var osJogos = await dtFetch('/times/' + dtState.osascoTid + '/partidas');
-    if(osJogos && Array.isArray(osJogos)) {
-      var osJogados = osJogos.filter(function(j){
-        return j.placar_mandante !== null && j.placar_mandante !== undefined;
-      });
-      dtState.osascoPartidas = osJogados;
-      // Buscar stats das últimas 3 partidas em paralelo
-      var ultimas3 = osJogados.slice(-3);
-      var statsPromises = ultimas3.map(function(j){
-        var pid = j.partida_id||j.id;
-        return dtFetch('/partidas/' + pid).then(function(data){
-          if(data) dtState.partidasCache[pid] = data;
-          return data;
-        });
-      });
-      await Promise.all(statsPromises);
-      dtState.statsOsasco = true;
-
-      // Atualizar seção de stats se existir
-      var statsEl = document.getElementById('dt-stats-partidas');
-      if(statsEl) statsEl.innerHTML = dtRenderStatsPartidas();
-    }
-  }
-
-  // ── 4. Jogos ao vivo (se houver) ──
-  var aoVivo = await dtFetch('/ao-vivo');
-  if(aoVivo && Array.isArray(aoVivo) && aoVivo.length > 0) {
-    dtState.aoVivo = aoVivo;
-    var aoVivoEl = document.getElementById('dt-ao-vivo');
-    if(aoVivoEl) aoVivoEl.innerHTML = dtRenderAoVivo(aoVivo);
-  }
-}
-
-// ── Render elenco detalhado do adversário ──
-function dtRenderElencoAdv(elenco) {
-  var jogadores = elenco.atletas || elenco.jogadores || elenco || [];
-  if(!Array.isArray(jogadores) || jogadores.length === 0) {
-    return '<div style="color:var(--ts);font-size:12px">Elenco não disponível</div>';
-  }
-  var porPos = {};
-  var posOrder = ['Goleiro','Lateral','Zagueiro','Volante','Meia','Atacante'];
-  jogadores.forEach(function(j){
-    var pos = j.posicao || j.posicao_id || 'Outros';
-    // Normalizar nomes de posição
-    if(typeof pos === 'number') {
-      pos = [null,'Goleiro','Zagueiro','Lateral','Volante','Meia','Atacante'][pos] || 'Outros';
-    }
-    if(!porPos[pos]) porPos[pos] = [];
-    porPos[pos].push(j);
-  });
-  var html = '<div style="display:flex;flex-direction:column;gap:14px">';
-  var keys = posOrder.concat(Object.keys(porPos).filter(function(p){ return posOrder.indexOf(p)<0; }));
-  keys.forEach(function(pos){
-    if(!porPos[pos] || porPos[pos].length === 0) return;
-    html += '<div><div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(70,162,247,.08)">'+pos+'</div>';
-    html += '<div style="display:flex;flex-direction:column;gap:4px">';
-    porPos[pos].forEach(function(j){
-      var nome = j.nome_popular||j.nome||'—';
-      var camisa = j.camisa||j.numero||'';
-      var foto = j.foto||j.imagem||'';
-      var nac = j.nacionalidade||'';
-      var idade = j.idade||'';
-      html += '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(70,162,247,.04)">' +
-        '<span style="font-family:Bebas Neue,sans-serif;font-size:16px;color:rgba(70,162,247,.35);width:22px;text-align:center;flex-shrink:0">'+(camisa||'—')+'</span>' +
-        (foto ? '<img src="'+foto+'" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0">' :
-          '<div style="width:26px;height:26px;border-radius:50%;background:rgba(70,162,247,.08);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px"></div>') +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="font-size:12px;font-weight:600;color:var(--wh);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nome+'</div>' +
-          (idade||nac ? '<div style="font-size:9px;color:var(--ts)">'+(idade?idade+' anos':'')+(idade&&nac?' · ':'')+nac+'</div>' : '') +
-        '</div>' +
-      '</div>';
-    });
-    html += '</div></div>';
-  });
-  return html + '</div>';
-}
-
-// ── Render stats das últimas partidas ──
-function dtRenderStatsPartidas() {
-  var partidas = Object.values(dtState.partidasCache);
-  if(partidas.length === 0) return '<div style="color:var(--ts);font-size:12px">Sem dados de partidas disponíveis</div>';
-
-  var html = '<div style="display:flex;flex-direction:column;gap:12px">';
-  partidas.slice(-3).forEach(function(p) {
-    if(!p) return;
-    var mand = p.time_mandante||p.mandante||{};
-    var visit = p.time_visitante||p.visitante||{};
-    var osEmCasa = (mand.nome_popular||mand.nome||'').toLowerCase().indexOf('osasco') >= 0;
-    var oponente = osEmCasa ? (visit.nome_popular||visit.nome) : (mand.nome_popular||mand.nome);
-    var goOs = osEmCasa ? p.placar_mandante : p.placar_visitante;
-    var goAdv = osEmCasa ? p.placar_visitante : p.placar_mandante;
-    var dtStr = p.data_realizacao ? new Date(p.data_realizacao.replace(' ','T')).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '';
-
-    html += '<div style="background:rgba(0,0,0,.15);border:1px solid rgba(70,162,247,.08);border-radius:5px;padding:12px 14px">';
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
-      '<div style="font-size:11px;font-weight:700;color:var(--wh)">'+dtStr+' vs '+oponente+'</div>' +
-      '<div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:'+(goOs>goAdv?'var(--gr)':goOs<goAdv?'var(--re)':'var(--ye)')+'">'+(goOs||0)+' x '+(goAdv||0)+'</div>' +
-    '</div>';
-
-    // Estatísticas da partida se disponíveis
-    var stats = p.estatisticas || p.stats || {};
-    var mandStats = stats.mandante || stats.time_mandante || {};
-    var visitStats = stats.visitante || stats.time_visitante || {};
-    var osStats = osEmCasa ? mandStats : visitStats;
-    var advStats = osEmCasa ? visitStats : mandStats;
-
-    if(osStats.posse_de_bola || osStats.finalizacoes || osStats.escanteios) {
-      var statsList = [
-        ['Posse', (osStats.posse_de_bola||'—')+'%', (advStats.posse_de_bola||'—')+'%'],
-        ['Finalizações', osStats.finalizacoes||'—', advStats.finalizacoes||'—'],
-        ['No Alvo', osStats.finalizacoes_no_alvo||'—', advStats.finalizacoes_no_alvo||'—'],
-        ['Escanteios', osStats.escanteios||'—', advStats.escanteios||'—'],
-        ['Faltas', osStats.faltas||'—', advStats.faltas||'—'],
-        ['Cartões', (osStats.cartoes_amarelos||0)+'AM '+(osStats.cartoes_vermelhos||0)+'VM',
-                    (advStats.cartoes_amarelos||0)+'AM '+(advStats.cartoes_vermelhos||0)+'VM'],
-      ];
-      html += '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;font-size:11px">';
-      statsList.forEach(function(s){
-        html += '<span style="color:var(--az);text-align:right;font-weight:600">'+s[1]+'</span>' +
-          '<span style="color:var(--ts);text-align:center;font-size:9px;letter-spacing:1px;padding:0 6px">'+s[0]+'</span>' +
-          '<span style="color:var(--ts);text-align:left">'+s[2]+'</span>';
-      });
-      html += '</div>';
-    } else {
-      html += '<div style="font-size:11px;color:var(--ts)">Estatísticas detalhadas não disponíveis para esta partida</div>';
-    }
-
-    // Gols marcados na partida
-    var gols = p.gols || [];
-    if(gols.length > 0) {
-      html += '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px">';
-      gols.forEach(function(g){
-        var jogador = g.atleta||g.jogador||{};
-        var nomeG = jogador.nome_popular||jogador.nome||'—';
-        var minuto = g.minuto||g.tempo||'—';
-        var isOsascoGol = (g.time||{}).nome_popular && ((g.time||{}).nome_popular||'').toLowerCase().indexOf('osasco')>=0;
-        html += '<span style="font-size:10px;padding:2px 8px;border-radius:2px;background:rgba(46,204,142,.1);border:1px solid rgba(46,204,142,.2);color:var(--gr)">&#9917; '+minuto+'min '+nomeG+'</span>';
-      });
-      html += '</div>';
-    }
-
-    html += '</div>';
-  });
-  return html + '</div>';
-}
-
-// ── Jogos ao vivo ──
-function dtRenderAoVivo(aoVivo) {
-  var paulista = aoVivo.filter(function(j){
-    var camp = j.campeonato||j.liga||{};
-    var n = (camp.nome||camp.nome_popular||'').toLowerCase();
-    return n.indexOf('paulista') >= 0;
-  });
-  if(paulista.length === 0 && aoVivo.length > 0) paulista = aoVivo.slice(0,3);
-  if(paulista.length === 0) return '';
-
-  var html = '<div style="background:rgba(46,204,142,.05);border:1px solid rgba(46,204,142,.2);border-radius:6px;padding:14px 18px;margin-bottom:12px">' +
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
-      '<span style="width:8px;height:8px;border-radius:50%;background:var(--gr);animation:pulse 2s infinite;flex-shrink:0"></span>' +
-      '<div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gr)">Ao Vivo Agora</div>' +
-    '</div>';
-  paulista.forEach(function(j){
-    var mand = j.time_mandante||j.mandante||{};
-    var visit = j.time_visitante||j.visitante||{};
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(46,204,142,.1)">' +
-      '<span style="font-size:12px;color:var(--wh)">'+( mand.nome_popular||mand.nome)+'</span>' +
-      '<span style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--gr);padding:0 12px">'+(j.placar_mandante||0)+' x '+(j.placar_visitante||0)+'</span>' +
-      '<span style="font-size:12px;color:var(--wh)">'+(visit.nome_popular||visit.nome)+'</span>' +
-    '</div>';
-  });
-  return html + '</div>';
-}
-
-function dtNormalizaClassif(raw) {
+function dtNormClassif(raw) {
   if(!raw) return null;
   if(Array.isArray(raw)) return raw;
-  var keys = Object.keys(raw);
-  if(keys.length > 0 && Array.isArray(raw[keys[0]])) return raw[keys[0]];
-  return null;
+  var k = Object.keys(raw);
+  return k.length>0 && Array.isArray(raw[k[0]]) ? raw[k[0]] : null;
 }
 
-// ── Forma compacta (bolinhas) ──
-function dtFormaHtml(tid, loading) {
-  if(loading) return '<span style="color:var(--ts);font-size:10px">···</span>';
-  var forma = dtState.formaCache[tid];
-  if(!forma || forma.length === 0) return '<span style="color:var(--ts);font-size:10px">—</span>';
-  var html = '<div style="display:flex;gap:3px;align-items:center">';
-  forma.forEach(function(j) {
-    var cor = j.e?'var(--ye)':j.v?'var(--gr)':'var(--re)';
-    var l = j.e?'E':j.v?'V':'D';
-    html += '<span title="' + (j.v?'Vitória ':j.e?'Empate ':'Derrota ') + j.gN + 'x' + j.gO + ' vs ' + j.op +
-      '" style="width:20px;height:20px;border-radius:50%;background:'+cor+'20;border:1px solid '+cor+'60;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:'+cor+'">'+l+'</span>';
+// ── Enriquecimento async (forma dos times) ──
+async function dtEnriquecerAsync() {
+  var times={};
+  if(dtState.classif) dtState.classif.forEach(function(t){
+    var o=t.time||t; var tid=o.time_id||o.id;
+    if(tid&&!times[tid]) times[tid]=o;
   });
-  return html + '</div>';
+  var tids=Object.keys(times);
+  for(var i=0;i<tids.length;i+=4){
+    var lote=tids.slice(i,i+4);
+    await Promise.all(lote.map(async function(tid){
+      if(dtState.formaCache[tid]) return;
+      var jgs=await dtFetch('/times/'+tid+'/partidas');
+      if(!jgs||!Array.isArray(jgs)) return;
+      var jogados=jgs.filter(function(j){ return j.placar_mandante!==null&&j.placar_mandante!==undefined&&j.placar_mandante!==''; });
+      dtState.formaCache[tid]=jogados.slice(-5).map(function(j){
+        var m=j.time_mandante||j.mandante||{};
+        var v=j.time_visitante||j.visitante||{};
+        var isM=(m.time_id||m.id)==tid;
+        var gN=isM?(j.placar_mandante||0):(j.placar_visitante||0);
+        var gO=isM?(j.placar_visitante||0):(j.placar_mandante||0);
+        return {gN:gN,gO:gO,v:gN>gO,e:gN===gO,op:isM?(v.nome_popular||v.nome||'?'):(m.nome_popular||m.nome||'?')};
+      });
+      document.querySelectorAll('.dt-forma-'+tid).forEach(function(el){ el.innerHTML=dtFormaHtml(tid); });
+      var advTid=dtState.adversario&&(dtState.adversario.time_id||dtState.adversario.id);
+      if(advTid==tid){ var af=document.getElementById('dt-adv-forma'); if(af) af.innerHTML=dtAdvForma(); }
+    }));
+  }
 }
 
-// ── Forma detalhada do adversário (lista de resultados) ──
-function dtAdvFormaDetalhada(adv) {
-  var tid = adv.time_id||adv.id;
-  var forma = dtState.formaCache[tid];
-  if(!forma) return '<div style="color:var(--ts);font-size:12px">Carregando forma do adversário...</div>';
-  if(forma.length === 0) return '<div style="color:var(--ts);font-size:12px">Sem dados disponíveis</div>';
+function dtFormaHtml(tid) {
+  var f=dtState.formaCache[tid];
+  if(!f||f.length===0) return '<span style="color:var(--ts);font-size:10px">...</span>';
+  var h='<div style="display:flex;gap:3px">';
+  f.forEach(function(j){
+    var cor=j.e?'var(--ye)':j.v?'var(--gr)':'var(--re)';
+    var l=j.e?'E':j.v?'V':'D';
+    h+='<span title="'+j.gN+'x'+j.gO+' vs '+j.op+'" style="width:20px;height:20px;border-radius:50%;background:'+cor+'20;border:1px solid '+cor+'60;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:'+cor+'">'+l+'</span>';
+  });
+  return h+'</div>';
+}
 
-  // Estatísticas agregadas
+function dtAdvForma() {
+  var adv=dtState.adversario||{};
+  var tid=adv.time_id||adv.id;
+  var f=dtState.formaCache[tid];
+  if(!f) return '<div style="color:var(--ts);font-size:12px">Carregando...</div>';
+  if(f.length===0) return '<div style="color:var(--ts);font-size:12px">Sem dados</div>';
   var v=0,e=0,d=0,gm=0,gs=0;
-  forma.forEach(function(j){ if(j.v)v++;else if(j.e)e++;else d++; gm+=parseInt(j.gN)||0; gs+=parseInt(j.gO)||0; });
-
-  var resumoHtml = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px">';
-  var stats = [['V',v,'var(--gr)'],['E',e,'var(--ye)'],['D',d,'var(--re)'],['GM',gm,'var(--wh)'],['GS',gs,'var(--ts)']];
-  stats.forEach(function(s){
-    resumoHtml += '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:8px;text-align:center">' +
-      '<div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:'+s[2]+';line-height:1">'+s[1]+'</div>' +
-      '<div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts)">'+s[0]+'</div></div>';
+  f.forEach(function(j){ if(j.v)v++;else if(j.e)e++;else d++; gm+=parseInt(j.gN)||0; gs+=parseInt(j.gO)||0; });
+  var h='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px">';
+  [['V',v,'var(--gr)'],['E',e,'var(--ye)'],['D',d,'var(--re)'],['GM',gm,'var(--wh)'],['GS',gs,'var(--ts)']].forEach(function(s){
+    h+='<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:8px;text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:'+s[2]+';line-height:1">'+s[1]+'</div><div style="font-size:9px;text-transform:uppercase;color:var(--ts)">'+s[0]+'</div></div>';
   });
-  resumoHtml += '</div>';
-
-  var listaHtml = '<div style="display:flex;flex-direction:column;gap:5px">';
-  forma.slice().reverse().forEach(function(j){
-    var cor = j.e?'var(--ye)':j.v?'var(--gr)':'var(--re)';
-    var l = j.e?'E':j.v?'V':'D';
-    listaHtml += '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:'+cor+'10;border:1px solid '+cor+'30;border-radius:4px">' +
-      '<div style="display:flex;align-items:center;gap:8px">' +
-        '<span style="background:'+cor+'20;color:'+cor+';border:1px solid '+cor+'50;font-size:9px;font-weight:700;padding:2px 8px;border-radius:2px">'+l+'</span>' +
-        '<span style="font-size:12px;color:var(--wh)">'+j.op+'</span>' +
-      '</div>' +
-      '<span style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--wh)">'+j.gN+' x '+j.gO+'</span>' +
-    '</div>';
+  h+='</div><div style="display:flex;flex-direction:column;gap:5px">';
+  f.slice().reverse().forEach(function(j){
+    var cor=j.e?'var(--ye)':j.v?'var(--gr)':'var(--re)';
+    var l=j.e?'E':j.v?'V':'D';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:'+cor+'10;border:1px solid '+cor+'30;border-radius:4px">' +
+      '<div style="display:flex;align-items:center;gap:8px"><span style="background:'+cor+'20;color:'+cor+';border:1px solid '+cor+'50;font-size:9px;font-weight:700;padding:2px 8px;border-radius:2px">'+l+'</span>' +
+      '<span style="font-size:12px;color:var(--wh)">'+j.op+'</span></div>' +
+      '<span style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--wh)">'+j.gN+' x '+j.gO+'</span></div>';
   });
-  return resumoHtml + listaHtml + '</div>';
+  return h+'</div>';
 }
 
-// ── Estatísticas do Osasco na temporada ──
 function dtOsascoStats() {
-  var jogados = dtState.jogosOsasco.filter(function(j){ return j.jogado; });
-  if(jogados.length === 0) return null;
-  var v=0,e=0,d=0,gm=0,gs=0,em_casa=0,em_casa_v=0,fora=0,fora_v=0;
-  jogados.forEach(function(jg){
-    var p = jg.partida;
-    var emCasa = jg.emCasa;
-    var goOs = emCasa ? (p.placar_mandante||0) : (p.placar_visitante||0);
-    var goAdv = emCasa ? (p.placar_visitante||0) : (p.placar_mandante||0);
-    gm+=parseInt(goOs)||0; gs+=parseInt(goAdv)||0;
-    if(goOs>goAdv){v++; if(emCasa)em_casa_v++;else fora_v++;}
-    else if(goOs===goAdv) e++;
+  var jgs=dtState.jogosOsasco.filter(function(j){ return j.jogado; });
+  if(jgs.length===0) return null;
+  var v=0,e=0,d=0,gm=0,gs=0,cv=0,cf=0,cvv=0,cff=0;
+  jgs.forEach(function(jg){
+    var p=jg.partida;
+    var gO=jg.emCasa?(p.placar_mandante||0):(p.placar_visitante||0);
+    var gA=jg.emCasa?(p.placar_visitante||0):(p.placar_mandante||0);
+    gm+=parseInt(gO)||0; gs+=parseInt(gA)||0;
+    if(gO>gA){v++; if(jg.emCasa)cvv++;else cff++;}
+    else if(gO===gA) e++;
     else d++;
-    if(emCasa) em_casa++; else fora++;
+    if(jg.emCasa) cv++; else cf++;
   });
-  return { j:jogados.length, v:v, e:e, d:d, gm:gm, gs:gs,
-    ap:Math.round((v*3+e)/(jogados.length*3)*100),
-    em_casa:em_casa, em_casa_v:em_casa_v, fora:fora, fora_v:fora_v };
+  return {j:jgs.length,v:v,e:e,d:d,gm:gm,gs:gs,ap:Math.round((v*3+e)/(jgs.length*3)*100),cv:cv,cvv:cvv,cf:cf,cff:cff};
 }
 
-// ── Posição do Osasco na tabela ──
 function dtOsascoPosicao() {
   if(!dtState.classif) return null;
-  var pos = -1;
+  var pos=-1;
   dtState.classif.forEach(function(t,i){
-    var tObj = t.time||t;
-    var n = (tObj.nome_popular||tObj.nome||'').toLowerCase();
-    if(n.indexOf('osasco')>=0 && pos<0) pos=i;
+    var o=t.time||t;
+    var n=(o.nome_popular||o.nome||'').toLowerCase();
+    if((n.indexOf('osasco')>=0||n.indexOf('oeste')>=0)&&pos<0) pos=i;
   });
-  return pos >= 0 ? { pos:pos+1, dados:dtState.classif[pos] } : null;
-}
-
-// ── Dificuldade estimada do próximo jogo ──
-function dtDificuldade() {
-  if(!dtState.adversario || !dtState.classif) return null;
-  var advNome = (dtState.adversario.nome_popular||dtState.adversario.nome||'').toLowerCase();
-  var posAdv = -1;
-  dtState.classif.forEach(function(t,i){
-    var tObj = t.time||t;
-    var n = (tObj.nome_popular||tObj.nome||'').toLowerCase();
-    if(n.indexOf(advNome.split(' ')[0])>=0 && posAdv<0) posAdv=i;
-  });
-  var total = dtState.classif.length;
-  if(posAdv < 0 || total === 0) return null;
-  var pct = 1 - posAdv/total; // 1 = 1º lugar, 0 = último
-  if(pct >= 0.75) return { nivel:'Alta', cor:'var(--re)', pct:pct };
-  if(pct >= 0.4)  return { nivel:'Média', cor:'var(--ye)', pct:pct };
-  return { nivel:'Baixa', cor:'var(--gr)', pct:pct };
+  return pos>=0?{pos:pos+1,dados:dtState.classif[pos]}:null;
 }
 
 // ══════════════════════════════════════
-// RENDER DASHBOARD
+// RENDER
 // ══════════════════════════════════════
 function dtRenderDashboard() {
-  var dash = document.getElementById('dt-dashboard');
-  var html = '';
-
-  // ── AO VIVO (se houver jogos em andamento) ──
-  html += '<div id="dt-ao-vivo"></div>';
-
-  // ── BLOCO A: PRÓXIMO JOGO + ADVERSÁRIO ──
-  html += dtBlocoProxJogo();
-
-  // ── BLOCO B: PLANTEL DISPONÍVEL ──
-  html += dtBlocoPlantel();
-
-  // ── BLOCO C: CALENDÁRIO E DESEMPENHO DO OSASCO ──
-  html += dtBlocoDesempenho();
-
-  // ── BLOCO D: CLASSIFICAÇÃO + ARTILHARIA ──
-  html += dtBlocoClassificacao();
-
-  dash.innerHTML = html;
+  var dash=document.getElementById('dt-dashboard');
+  dash.innerHTML = dtBlocoAoVivo()+dtBlocoProxJogo()+dtBlocoPlantel()+dtBlocoDesempenho()+dtBlocoClassificacao();
 }
 
-// ── BLOCO A: Próximo Jogo + Radar do Adversário ──
+function dtBlocoAoVivo() {
+  return '<div id="dt-ao-vivo"></div>';
+}
+
 function dtBlocoProxJogo() {
-  var s = '<div style="margin-bottom:36px">' +
-    '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">ANÁLISE TÁTICA</div>' +
-    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Radar do Próximo Adversário</div>';
-
+  var s='<div style="margin-bottom:36px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">ANALISE TATICA</div>' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Radar do Proximo Adversario</div>';
   if(!dtState.proxJogo) {
-    var proxFuturos = dtState.jogosOsasco.filter(function(j){ return !j.jogado; });
-    if(proxFuturos.length === 0) {
-      return s + '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:24px;color:var(--ts)">Nenhum jogo futuro encontrado na API. O campeonato pode estar encerrado ou em pausa.</div></div>';
-    }
+    s+='<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:24px">' +
+      '<div style="font-size:13px;color:var(--ts)">Nenhum jogo futuro encontrado.</div>' +
+      '<div style="font-size:11px;color:var(--ts);margin-top:8px">Motivo: a chave API atual (test_) so tem acesso ao Campeonato Brasileiro Serie B. Para ver dados do Paulista A2 2026 e necessario uma chave live_ com acesso a esse campeonato.</div>' +
+    '</div>';
+    return s+'</div>';
   }
-
-  var adv = dtState.adversario || {};
-  var advNome = adv.nome_popular||adv.nome||'—';
-  var advEscudo = adv.escudo||adv.logo||'';
-  var advTid = adv.time_id||adv.id;
-
-  // Dados do jogo
-  var dtObj = dtState.proxJogo ? dtState.proxJogo.dt : null;
-  var hrFmt = dtObj ? dtObj.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '—';
-  var dtFmt = dtObj ? dtObj.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'}) : '—';
-  var diasNum = dtObj ? Math.max(0, Math.ceil((dtObj - new Date())/(1000*60*60*24))) : 0;
-  var p = dtState.proxJogo ? dtState.proxJogo.partida : {};
-  var mand = p.time_mandante||p.mandante||{};
-  var emCasa = (mand.nome_popular||mand.nome||'').toLowerCase().indexOf('osasco') >= 0;
-  var estadio = p.estadio || '—';
-  var dific = dtDificuldade();
-
-  // Posição do adversário na tabela
-  var posAdvObj = null;
-  if(dtState.classif && advNome !== '—') {
+  var p=dtState.proxJogo.partida;
+  var adv=dtState.adversario||{};
+  var advNome=adv.nome_popular||adv.nome||'Adversario';
+  var advEscudo=adv.escudo||adv.logo||'';
+  var advTid=adv.time_id||adv.id;
+  var dtO=dtState.proxJogo.dt;
+  var dtFmt=dtO?dtO.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'}):'--';
+  var hrFmt=dtO?dtO.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'--';
+  var diasN=dtO?Math.max(0,Math.ceil((dtO-new Date())/(1000*60*60*24))):0;
+  var dias=diasN===0?'HOJE':diasN===1?'AMANHA':diasN+'d';
+  var mand=p.time_mandante||p.mandante||{};
+  var mNome=(mand.nome_popular||mand.nome||'').toLowerCase();
+  var emCasa=mNome.indexOf('osasco')>=0||mNome.indexOf('oeste')>=0;
+  var estadio=p.estadio||'--';
+  var posAdv=null;
+  if(dtState.classif && advNome!=='Adversario'){
     dtState.classif.forEach(function(t,i){
-      var tObj = t.time||t;
-      var n = (tObj.nome_popular||tObj.nome||'').toLowerCase();
-      if(n.indexOf(advNome.toLowerCase().split(' ')[0])>=0 && !posAdvObj) posAdvObj = { pos:i+1, d:t };
+      var o=t.time||t;
+      var n=(o.nome_popular||o.nome||'').toLowerCase();
+      if(n.indexOf(advNome.toLowerCase().split(' ')[0])>=0&&!posAdv) posAdv={pos:i+1,d:t};
     });
   }
-
-  s += '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-bottom:12px">';
-
-  // Card do jogo
-  s += '<div style="background:linear-gradient(135deg,rgba(70,162,247,.1),var(--c2));border:1px solid rgba(70,162,247,.25);border-radius:8px;padding:24px">' +
-    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az);margin-bottom:14px">' + (dtState.proxJogo ? (dtState.proxJogo.rodada||'PRÓXIMA RODADA') : 'PRÓXIMO JOGO') + '</div>' +
-    '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">' +
-      (advEscudo ? '<img src="'+advEscudo+'" style="width:72px;height:72px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'">' :
-       '<div style="width:72px;height:72px;border-radius:50%;background:rgba(70,162,247,.08);border:2px solid rgba(70,162,247,.15);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">&#9917;</div>') +
-      '<div>' +
-        '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(24px,3vw,36px);color:var(--wh);letter-spacing:1px;line-height:1">'+advNome+'</div>' +
-        (posAdvObj ? '<div style="font-size:11px;color:var(--ts);margin-top:4px">'+posAdvObj.pos+'º lugar · '+((posAdvObj.d.pontos||0))+' pts · '+(posAdvObj.d.jogos||0)+' jogos</div>' : '') +
-        (dific ? '<div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:'+dific.cor+'15;border:1px solid '+dific.cor+'40;padding:3px 10px;border-radius:3px"><span style="width:7px;height:7px;border-radius:50%;background:'+dific.cor+'"></span><span style="font-size:10px;font-weight:700;letter-spacing:1px;color:'+dific.cor+'">DIFICULDADE '+dific.nivel.toUpperCase()+'</span></div>' : '') +
+  s+='<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-bottom:12px">' +
+    '<div style="background:linear-gradient(135deg,rgba(70,162,247,.1),var(--c2));border:1px solid rgba(70,162,247,.25);border-radius:8px;padding:24px">' +
+      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az);margin-bottom:14px">'+(dtState.proxJogo.rodada||'PROXIMO JOGO')+'</div>' +
+      '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">' +
+        (advEscudo?'<img src="'+advEscudo+'" style="width:72px;height:72px;object-fit:contain;flex-shrink:0">':'<div style="width:72px;height:72px;border-radius:50%;background:rgba(70,162,247,.1);border:2px solid rgba(70,162,247,.2);flex-shrink:0"></div>') +
+        '<div>' +
+          '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(22px,3vw,34px);color:var(--wh);letter-spacing:1px;line-height:1">'+advNome+'</div>' +
+          (posAdv?'<div style="font-size:11px;color:var(--ts);margin-top:4px">'+posAdv.pos+'o lugar &middot; '+(posAdv.d.pontos||0)+' pts</div>':'') +
+        '</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+        '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;color:var(--ts)">Data</div><div style="font-size:11px;font-weight:700;color:var(--wh);margin-top:3px">'+dtFmt+'</div></div>' +
+        '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;color:var(--ts)">Hora</div><div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:var(--az);line-height:1;margin-top:2px">'+hrFmt+'</div></div>' +
+        '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;color:var(--ts)">Contagem</div><div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:'+(diasN<=3?'var(--re)':diasN<=7?'var(--ye)':'var(--wh)')+';line-height:1;margin-top:2px">'+dias+'</div></div>' +
+        '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px;grid-column:span 2"><div style="font-size:9px;text-transform:uppercase;color:var(--ts)">Mando</div><div style="font-size:13px;font-weight:700;color:'+(emCasa?'var(--gr)':'var(--ye)')+';margin-top:3px">'+(emCasa?'Casa':'Fora')+'</div></div>' +
+        '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;color:var(--ts)">Estadio</div><div style="font-size:11px;font-weight:600;color:var(--wh);margin-top:2px">'+estadio+'</div></div>' +
       '</div>' +
     '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
-      '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Data</div><div style="font-size:11px;font-weight:700;color:var(--wh)">'+dtFmt+'</div></div>' +
-      '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Horário</div><div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:var(--az);line-height:1;margin-top:2px">'+hrFmt+'</div></div>' +
-      '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Contagem</div><div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:'+(diasNum<=3?'var(--re)':diasNum<=7?'var(--ye)':'var(--wh)')+';line-height:1;margin-top:2px">'+(diasNum===0?'HOJE':diasNum===1?'AMANHÃ':diasNum+'d')+'</div></div>' +
-      '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px;grid-column:span 2"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Mando</div><div style="font-size:13px;font-weight:700;color:'+(emCasa?'var(--gr)':'var(--ye)')+';margin-top:2px">'+(emCasa?'Casa Mandante — Casa':'Fora Visitante — Fora')+'</div></div>' +
-      '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Estádio</div><div style="font-size:11px;font-weight:600;color:var(--wh);margin-top:2px">'+estadio+'</div></div>' +
+    '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:8px;padding:20px">' +
+      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px">Forma Recente &mdash; '+advNome+'</div>' +
+      '<div id="dt-adv-forma">'+dtAdvForma()+'</div>' +
     '</div>' +
   '</div>';
-
-  // Card: Forma + Stats do adversário
-  s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:8px;padding:20px">' +
-    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:14px">Forma Recente — ' + advNome + '</div>' +
-    '<div id="dt-adv-forma-detalhada">' + dtAdvFormaDetalhada(adv) + '</div>' +
-  '</div>';
-
-  s += '</div>'; // fecha grid 2 colunas
-
-  // Stats da tabela do adversário (linha de stats)
-  if(posAdvObj) {
-    var d = posAdvObj.d;
-    var sg = d.saldo_gols||0;
-    s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:12px;margin-bottom:12px">';
-    var sts = [
-      ['Posição', posAdvObj.pos+'º','var(--ye)'],
-      ['Pontos', d.pontos||0, 'var(--wh)'],
-      ['Jogos', d.jogos||0, 'var(--ts)'],
-      ['Vitórias', d.vitorias||0, 'var(--gr)'],
-      ['Empates', d.empates||0, 'var(--ye)'],
-      ['Derrotas', d.derrotas||0, 'var(--re)'],
-      ['Gols M.', d.gols_marcados||d.gols_pro||0, 'var(--wh)'],
-      ['Gols S.', d.gols_sofridos||d.gols_contra||0, 'var(--ts)'],
-      ['Saldo', (sg>0?'+':'')+sg, sg>0?'var(--gr)':sg<0?'var(--re)':'var(--ts)'],
-      ['Aproveita.', Math.round(((d.pontos||0)/Math.max((d.jogos||1)*3,1))*100)+'%','var(--az)'],
-    ];
-    sts.forEach(function(st){
-      s += '<div style="text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:'+st[2]+';line-height:1">'+st[1]+'</div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-top:3px">'+st[0]+'</div></div>';
+  if(posAdv) {
+    var d=posAdv.d; var sg=d.saldo_gols||0;
+    s+='<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:14px 18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px;margin-bottom:12px">';
+    [['Posicao',posAdv.pos+'o','var(--ye)'],['Pts',d.pontos||0,'var(--wh)'],['Jogos',d.jogos||0,'var(--ts)'],['V',d.vitorias||0,'var(--gr)'],['E',d.empates||0,'var(--ye)'],['D',d.derrotas||0,'var(--re)'],['GM',d.gols_marcados||d.gols_pro||0,'var(--wh)'],['GS',d.gols_sofridos||d.gols_contra||0,'var(--ts)'],['SG',(sg>0?'+':'')+sg,sg>0?'var(--gr)':sg<0?'var(--re)':'var(--ts)']].forEach(function(st){
+      s+='<div style="text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:24px;color:'+st[2]+';line-height:1">'+st[1]+'</div><div style="font-size:9px;text-transform:uppercase;color:var(--ts);margin-top:2px">'+st[0]+'</div></div>';
     });
-    s += '</div>';
+    s+='</div>';
   }
-
-  // Artilheiros do adversário
-  if(dtState.artilharia && Array.isArray(dtState.artilharia) && advNome !== '—') {
-    var artAdv = dtState.artilharia.filter(function(a){
-      var t = a.time||a.equipe||{};
-      var tn = (t.nome_popular||t.nome||'').toLowerCase();
-      return tn.indexOf(advNome.toLowerCase().split(' ')[0]) >= 0;
-    }).slice(0,5);
-    if(artAdv.length > 0) {
-      s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:16px 20px;margin-bottom:12px">' +
-        '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px"> Jogadores Perigosos — ' + advNome + '</div>' +
-        '<div style="display:flex;flex-direction:column;gap:6px">';
-      artAdv.forEach(function(a, i){
-        var jogador = a.atleta||a.jogador||a;
-        var nome = jogador.nome_popular||jogador.nome||'—';
-        var foto = jogador.foto||jogador.imagem||'';
-        var gols = a.gols||a.quantidade||0;
-        s += '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(70,162,247,.06)">' +
-          '<span style="font-family:Bebas Neue,sans-serif;font-size:18px;color:rgba(70,162,247,.35);width:22px">'+(i+1)+'</span>' +
-          (foto ? '<img src="'+foto+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">' : '<div style="width:32px;height:32px;border-radius:50%;background:rgba(70,162,247,.1);flex-shrink:0"></div>') +
-          '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--wh)">'+nome+'</div>' +
-            (jogador.posicao ? '<div style="font-size:10px;color:var(--ts)">'+jogador.posicao+'</div>' : '') +
-          '</div>' +
-          '<div style="text-align:right"><div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--re);line-height:1">'+gols+'</div><div style="font-size:8px;color:var(--ts)">gols</div></div>' +
-        '</div>';
-      });
-      s += '</div></div>';
-    }
-  }
-
-  // Elenco do adversário (populado assíncronamente)
-  s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:20px;margin-bottom:12px">' +
-    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px"> Elenco Completo — ' + advNome + '</div>' +
-    '<div id="dt-elenco-adv"><div style="color:var(--ts);font-size:12px">Carregando elenco...</div></div>' +
-  '</div>';
-
-  // Stats das últimas partidas do Osasco
-  s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:20px">' +
-    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px"> Últimas Partidas — Osasco Sporting (Stats)</div>' +
-    '<div id="dt-stats-partidas"><div style="color:var(--ts);font-size:12px">Carregando estatísticas...</div></div>' +
-  '</div>';
-
-  return s + '</div>';
+  return s+'</div>';
 }
 
-// ── BLOCO B: Plantel Disponível ──
 function dtBlocoPlantel() {
-  var s = '<div style="margin-bottom:36px">' +
+  return '<div style="margin-bottom:36px">' +
     '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">ELENCO</div>' +
-    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Plantel Disponível para o Jogo</div>' +
-    '<div id="dt-plantel-content">' + dtPlantelHtml() + '</div>' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Plantel Disponivel para o Jogo</div>' +
+    '<div id="dt-plantel-content">'+dtPlantelHtml()+'</div>' +
   '</div>';
-  return s;
 }
 
-// ── BLOCO C: Desempenho do Osasco ──
 function dtBlocoDesempenho() {
-  var s = '<div style="margin-bottom:36px">' +
+  var s='<div style="margin-bottom:36px">' +
     '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">TEMPORADA</div>' +
-    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Osasco Sporting — Campanha</div>';
-
-  var stats = dtOsascoStats();
-  var posObj = dtOsascoPosicao();
-  var jogos = dtState.jogosOsasco;
-
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Osasco Sporting &mdash; Campanha</div>';
+  var stats=dtOsascoStats();
+  var posObj=dtOsascoPosicao();
   if(stats) {
-    // KPIs
-    s += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-bottom:16px">';
-    var kpis = [
-      ['Posição', posObj ? posObj.pos+'º' : '—', 'var(--az)'],
-      ['Aproveit.', stats.ap+'%', stats.ap>=60?'var(--gr)':stats.ap>=40?'var(--ye)':'var(--re)'],
-      ['Jogos', stats.j, 'var(--wh)'],
-      ['Vitórias', stats.v, 'var(--gr)'],
-      ['Empates', stats.e, 'var(--ye)'],
-      ['Derrotas', stats.d, 'var(--re)'],
-      ['Gols M.', stats.gm, 'var(--wh)'],
-      ['Gols S.', stats.gs, 'var(--ts)'],
-      ['Saldo', (stats.gm-stats.gs>0?'+':'')+(stats.gm-stats.gs), stats.gm>stats.gs?'var(--gr)':stats.gm<stats.gs?'var(--re)':'var(--ts)'],
-      ['Casa V', Math.round(stats.em_casa>0?stats.em_casa_v/stats.em_casa*100:0)+'%','var(--az)'],
-      ['Fora V', Math.round(stats.fora>0?stats.fora_v/stats.fora*100:0)+'%','var(--az)'],
-    ];
-    kpis.forEach(function(k){
-      s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:5px;padding:12px;text-align:center">' +
-        '<div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:'+k[2]+';line-height:1">'+k[1]+'</div>' +
-        '<div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-top:4px">'+k[0]+'</div>' +
-      '</div>';
+    s+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;margin-bottom:16px">';
+    [['Posicao',posObj?posObj.pos+'o':'--','var(--az)'],['Aproveita.',stats.ap+'%',stats.ap>=60?'var(--gr)':stats.ap>=40?'var(--ye)':'var(--re)'],['Jogos',stats.j,'var(--wh)'],['V',stats.v,'var(--gr)'],['E',stats.e,'var(--ye)'],['D',stats.d,'var(--re)'],['GM',stats.gm,'var(--wh)'],['GS',stats.gs,'var(--ts)'],['Saldo',(stats.gm-stats.gs>0?'+':'')+(stats.gm-stats.gs),stats.gm>stats.gs?'var(--gr)':stats.gm<stats.gs?'var(--re)':'var(--ts)'],['Casa V',Math.round(stats.cv>0?stats.cvv/stats.cv*100:0)+'%','var(--az)'],['Fora V',Math.round(stats.cf>0?stats.cff/stats.cf*100:0)+'%','var(--az)']].forEach(function(k){
+      s+='<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:5px;padding:12px;text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:'+k[2]+';line-height:1">'+k[1]+'</div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-top:3px">'+k[0]+'</div></div>';
     });
-    s += '</div>';
+    s+='</div>';
   }
-
-  // Calendário completo
-  s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:20px">' +
-    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:14px">Calendário Completo</div>' +
+  s+='<div style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:20px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px">Calendario Completo</div>' +
     '<div style="display:flex;flex-direction:column;gap:5px">';
-
-  var hoje = new Date();
-  jogos.forEach(function(jogo) {
-    var p = jogo.partida;
-    var adv = jogo.adversario||{};
-    var advNome = adv.nome_popular||adv.nome||'—';
-    var advEscudo = adv.escudo||adv.logo||'';
-    var advTid = adv.time_id||adv.id;
-    var isProx = dtState.proxJogo && dtState.proxJogo.partida === p;
-    var dtStr = jogo.dt ? jogo.dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '—';
-    var hrStr = jogo.dt ? jogo.dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
-
-    var resultHtml = '';
-    if(jogo.jogado) {
-      var goOs = jogo.emCasa ? (p.placar_mandante||0) : (p.placar_visitante||0);
-      var goAdv = jogo.emCasa ? (p.placar_visitante||0) : (p.placar_mandante||0);
-      var v = goOs>goAdv; var e = goOs===goAdv;
-      var cor = e?'var(--ye)':v?'var(--gr)':'var(--re)';
-      resultHtml = '<div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">' +
-        '<span style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--wh)">'+goOs+' x '+goAdv+'</span>' +
-        '<span style="background:'+cor+'20;color:'+cor+';border:1px solid '+cor+'40;font-size:9px;font-weight:700;padding:2px 7px;border-radius:2px">'+(e?'E':v?'V':'D')+'</span>' +
-      '</div>';
+  var hoje=new Date();
+  (dtState.jogosOsasco||[]).forEach(function(jg){
+    var p=jg.partida;
+    var adv=jg.adversario||{};
+    var advN=adv.nome_popular||adv.nome||'--';
+    var advE=adv.escudo||adv.logo||'';
+    var isP=dtState.proxJogo&&dtState.proxJogo.partida===p;
+    var dStr=jg.dt?jg.dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'--';
+    var hStr=jg.dt?jg.dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+    var resH='';
+    if(jg.jogado){
+      var gO=jg.emCasa?(p.placar_mandante||0):(p.placar_visitante||0);
+      var gA=jg.emCasa?(p.placar_visitante||0):(p.placar_mandante||0);
+      var cor2=gO>gA?'var(--gr)':gO===gA?'var(--ye)':'var(--re)';
+      var letra=gO>gA?'V':gO===gA?'E':'D';
+      resH='<div style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><span style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--wh)">'+gO+' x '+gA+'</span><span style="background:'+cor2+'20;color:'+cor2+';border:1px solid '+cor2+'40;font-size:9px;font-weight:700;padding:2px 6px;border-radius:2px">'+letra+'</span></div>';
     } else {
-      resultHtml = '<div style="font-size:11px;color:var(--ts);text-align:right">' + hrStr + '</div>';
+      resH='<div style="font-size:11px;color:var(--ts);text-align:right">'+hStr+'</div>';
     }
-
-    s += '<div style="display:grid;grid-template-columns:48px auto 1fr auto;align-items:center;gap:10px;padding:9px 12px;' +
-      'background:'+(isProx?'rgba(70,162,247,.08)':jogo.jogado?'rgba(0,0,0,.12)':'var(--c1)')+';' +
-      'border:1px solid '+(isProx?'rgba(70,162,247,.35)':jogo.jogado?'rgba(70,162,247,.04)':'rgba(70,162,247,.07)')+';' +
-      'border-radius:4px;'+(isProx?'border-left:3px solid var(--az);':'')+'">' +
-      '<div><div style="font-size:10px;font-weight:700;color:'+(isProx?'var(--az)':jogo.jogado?'var(--ts)':'var(--ts)')+'">'+dtStr+'</div>' +
-        '<div style="font-size:8px;color:rgba(122,155,181,.5)">'+(jogo.rodada||'').replace('Rodada','Rd').substring(0,8)+'</div></div>' +
-      (advEscudo ? '<img src="'+advEscudo+'" style="width:24px;height:24px;object-fit:contain">' :
-        '<div style="width:24px;height:24px;border-radius:50%;background:rgba(70,162,247,.06);border:1px solid rgba(70,162,247,.1);display:flex;align-items:center;justify-content:center;font-size:10px">&#9917;</div>') +
-      '<div>' +
-        '<div style="font-size:12px;font-weight:'+(isProx?'700':'500')+';color:'+(isProx?'var(--wh)':jogo.jogado?'rgba(240,244,248,.55)':'var(--wh)')+'">'+advNome+'</div>' +
-        '<div style="font-size:10px;color:var(--ts)">'+(jogo.emCasa?'Casa':'Fora')+(p.estadio ? ' · '+p.estadio : '')+'</div>' +
-      '</div>' +
-      '<div>' + resultHtml + '</div>' +
+    s+='<div style="display:grid;grid-template-columns:44px auto 1fr auto;align-items:center;gap:8px;padding:8px 12px;background:'+(isP?'rgba(70,162,247,.08)':jg.jogado?'rgba(0,0,0,.12)':'var(--c1)')+';border:1px solid '+(isP?'rgba(70,162,247,.35)':'rgba(70,162,247,.07)')+';border-radius:4px;'+(isP?'border-left:3px solid var(--az);':'border-left:3px solid transparent;')+'">' +
+      '<div><div style="font-size:10px;font-weight:700;color:'+(isP?'var(--az)':'var(--ts)')+'">'+dStr+'</div><div style="font-size:8px;color:rgba(122,155,181,.5)">'+(jg.rodada||'').replace('Rodada','Rd').substring(0,8)+'</div></div>' +
+      (advE?'<img src="'+advE+'" style="width:22px;height:22px;object-fit:contain">':'<div style="width:22px;height:22px;border-radius:50%;background:rgba(70,162,247,.06);border:1px solid rgba(70,162,247,.1)"></div>') +
+      '<div><div style="font-size:12px;font-weight:'+(isP?'700':'500')+';color:'+(isP?'var(--wh)':jg.jogado?'rgba(240,244,248,.55)':'var(--wh)')+'">'+advN+'</div><div style="font-size:10px;color:var(--ts)">'+(jg.emCasa?'Casa':'Fora')+'</div></div>' +
+      '<div>'+resH+'</div>' +
     '</div>';
   });
-
-  s += '</div></div>';
-  return s + '</div>';
+  s+='</div></div>';
+  return s+'</div>';
 }
 
-// ── BLOCO D: Classificação + Artilharia ──
 function dtBlocoClassificacao() {
-  var s = '<div style="margin-bottom:36px">' +
-    '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">COMPETIÇÃO</div>' +
-    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">' + (dtState.campNome||'Paulista A2') + '</div>';
-
-  s += '<div style="display:grid;grid-template-columns:1.8fr 1fr;gap:16px">';
-
-  // Classificação
-  if(dtState.classif && dtState.classif.length > 0) {
-    var advNomeBase = dtState.adversario ? (dtState.adversario.nome_popular||dtState.adversario.nome||'') : '';
-    s += '<div><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:10px">Tabela de Classificação</div>' +
-      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:420px">' +
-      '<thead><tr style="border-bottom:1px solid rgba(70,162,247,.15)">' +
+  var s='<div style="margin-bottom:36px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">COMPETICAO</div>' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">'+(dtState.campNome||'Paulista A2')+'</div>' +
+    '<div style="display:grid;grid-template-columns:1.8fr 1fr;gap:16px">';
+  if(dtState.classif && dtState.classif.length>0) {
+    var advN2=dtState.adversario?(dtState.adversario.nome_popular||dtState.adversario.nome||''):'';
+    s+='<div><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:8px">Tabela de Classificacao</div>' +
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:400px">' +
+      '<thead><tr style="border-bottom:2px solid rgba(70,162,247,.15)">' +
       ['#','Time','Forma','Pts','J','V','E','D','SG'].map(function(h){
         return '<th style="padding:7px 8px;text-align:'+(h==='Time'||h==='Forma'?'left':'center')+';font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts)">'+h+'</th>';
-      }).join('') + '</tr></thead><tbody>';
-
-    dtState.classif.forEach(function(t, i) {
-      var tObj = t.time||t;
-      var nome = tObj.nome_popular||tObj.nome||'—';
-      var escudo = tObj.escudo||tObj.logo||'';
-      var tid = tObj.time_id||tObj.id;
-      var isOsasco = nome.toLowerCase().indexOf('osasco')>=0;
-      var isAdv = advNomeBase && nome.toLowerCase().indexOf(advNomeBase.toLowerCase().split(' ')[0])>=0;
-      var sg = t.saldo_gols||0;
-      s += '<tr style="border-bottom:1px solid rgba(70,162,247,.04);background:'+(isOsasco?'rgba(70,162,247,.08);border-left:3px solid var(--az)':isAdv?'rgba(245,158,11,.05);border-left:3px solid var(--ye)':'border-left:3px solid transparent')+'">' +
-        '<td style="padding:7px 8px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:14px;color:'+(isOsasco?'var(--az)':'var(--ts)')+'">'+(t.posicao||i+1)+'</td>' +
-        '<td style="padding:7px 8px;max-width:130px"><div style="display:flex;align-items:center;gap:6px">' +
-          (escudo?'<img src="'+escudo+'" style="width:18px;height:18px;object-fit:contain;flex-shrink:0">':'') +
-          '<span style="font-weight:'+(isOsasco||isAdv?'700':'400')+';color:'+(isOsasco?'var(--az)':isAdv?'var(--ye)':'var(--wh)')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px">'+nome+'</span>' +
-          (isOsasco?'<span style="font-size:7px;background:rgba(70,162,247,.2);color:var(--az);padding:1px 5px;border-radius:2px;flex-shrink:0">NÓS</span>':'') +
-          (isAdv?'<span style="font-size:7px;background:rgba(245,158,11,.2);color:var(--ye);padding:1px 5px;border-radius:2px;flex-shrink:0">ADV</span>':'') +
+      }).join('')+'</tr></thead><tbody>';
+    dtState.classif.forEach(function(t,i){
+      var o=t.time||t;
+      var nome=o.nome_popular||o.nome||'--';
+      var esc=o.escudo||o.logo||'';
+      var tid=o.time_id||o.id;
+      var isOs=nome.toLowerCase().indexOf('osasco')>=0||nome.toLowerCase().indexOf('oeste')>=0;
+      var isAdv=advN2&&nome.toLowerCase().indexOf(advN2.toLowerCase().split(' ')[0])>=0;
+      var sg=t.saldo_gols||0;
+      s+='<tr style="border-bottom:1px solid rgba(70,162,247,.04);background:'+(isOs?'rgba(70,162,247,.08)':isAdv?'rgba(245,158,11,.05)':'')+';border-left:3px solid '+(isOs?'var(--az)':isAdv?'var(--ye)':'transparent')+'">' +
+        '<td style="padding:7px 8px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:14px;color:'+(isOs?'var(--az)':'var(--ts)')+'">'+(t.posicao||i+1)+'</td>' +
+        '<td style="padding:7px 10px"><div style="display:flex;align-items:center;gap:6px">'+(esc?'<img src="'+esc+'" style="width:18px;height:18px;object-fit:contain;flex-shrink:0">':'')+
+          '<span style="font-weight:'+(isOs||isAdv?'700':'400')+';color:'+(isOs?'var(--az)':isAdv?'var(--ye)':'var(--wh)')+'">'+nome+'</span>'+
+          (isOs?'<span style="font-size:7px;background:rgba(70,162,247,.2);color:var(--az);padding:1px 5px;border-radius:2px">NOS</span>':'')+
+          (isAdv?'<span style="font-size:7px;background:rgba(245,158,11,.2);color:var(--ye);padding:1px 5px;border-radius:2px">ADV</span>':'')+
         '</div></td>' +
-        '<td style="padding:7px 8px"><div class="dt-forma-'+(tid||i)+'">'+ dtFormaHtml(tid, !dtState.formaCache[tid]) +'</div></td>' +
+        '<td style="padding:7px 8px"><div class="dt-forma-'+tid+'">'+(dtState.formaCache[tid]?dtFormaHtml(tid):'<span style="color:var(--ts);font-size:10px">...</span>')+'</div></td>' +
         '<td style="padding:7px 8px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:16px;color:var(--wh)">'+(t.pontos||0)+'</td>' +
         '<td style="padding:7px 8px;text-align:center;color:var(--ts)">'+(t.jogos||0)+'</td>' +
         '<td style="padding:7px 8px;text-align:center;color:var(--gr)">'+(t.vitorias||0)+'</td>' +
@@ -5787,44 +5324,38 @@ function dtBlocoClassificacao() {
         '<td style="padding:7px 8px;text-align:center;color:'+(sg>0?'var(--gr)':sg<0?'var(--re)':'var(--ts)')+'">'+( sg>0?'+':'')+sg+'</td>' +
       '</tr>';
     });
-    s += '</tbody></table></div></div>';
+    s+='</tbody></table></div></div>';
   } else {
-    s += '<div style="color:var(--ts);font-size:13px">Tabela não disponível</div>';
+    s+='<div style="color:var(--ts);font-size:13px">Tabela nao disponivel para este campeonato com a chave atual.</div>';
   }
-
   // Artilharia
-  s += '<div>';
-  if(dtState.artilharia && Array.isArray(dtState.artilharia) && dtState.artilharia.length > 0) {
-    s += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:10px"> Artilharia do Campeonato</div>' +
-      '<div style="display:flex;flex-direction:column;gap:5px">';
-    dtState.artilharia.slice(0,12).forEach(function(a, i){
-      var jogador = a.atleta||a.jogador||a;
-      var nome = jogador.nome_popular||jogador.nome||'—';
-      var foto = jogador.foto||jogador.imagem||'';
-      var time = a.time||a.equipe||{};
-      var timeNome = time.nome_popular||time.nome||'';
-      var timeEscudo = time.escudo||time.logo||'';
-      var gols = a.gols||a.quantidade||0;
-      s += '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--c2);border:1px solid rgba(70,162,247,.07);border-radius:4px">' +
+  s+='<div>';
+  if(dtState.artilharia && Array.isArray(dtState.artilharia) && dtState.artilharia.length>0) {
+    s+='<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:8px">Artilharia do Campeonato</div><div style="display:flex;flex-direction:column;gap:5px">';
+    dtState.artilharia.slice(0,12).forEach(function(a,i){
+      var jg=a.atleta||a.jogador||a;
+      var nomeJ=jg.nome_popular||jg.nome||'--';
+      var foto=jg.foto||jg.imagem||'';
+      var time=a.time||a.equipe||{};
+      var timeN=time.nome_popular||time.nome||'';
+      var timeE=time.escudo||time.logo||'';
+      var gols=a.gols||a.quantidade||0;
+      s+='<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--c2);border:1px solid rgba(70,162,247,.07);border-radius:4px">' +
         '<span style="font-family:Bebas Neue,sans-serif;font-size:16px;color:rgba(70,162,247,.4);width:18px;flex-shrink:0">'+(i+1)+'</span>' +
         (foto?'<img src="'+foto+'" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0">':'') +
-        '<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:700;color:var(--wh);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nome+'</div>' +
-          '<div style="display:flex;align-items:center;gap:4px;margin-top:2px">'+(timeEscudo?'<img src="'+timeEscudo+'" style="width:12px;height:12px;object-fit:contain">':'') +
-          '<span style="font-size:9px;color:var(--ts)">'+timeNome+'</span></div>' +
-        '</div>' +
+        '<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:700;color:var(--wh);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nomeJ+'</div>' +
+          '<div style="display:flex;align-items:center;gap:4px;margin-top:2px">'+(timeE?'<img src="'+timeE+'" style="width:12px;height:12px;object-fit:contain">':'')+
+          '<span style="font-size:9px;color:var(--ts)">'+timeN+'</span></div></div>' +
         '<div style="font-family:Bebas Neue,sans-serif;font-size:24px;color:var(--re);line-height:1;flex-shrink:0">'+gols+'</div>' +
       '</div>';
     });
-    s += '</div>';
+    s+='</div>';
   } else {
-    s += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:10px">Artilharia</div>' +
-      '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:16px;color:var(--ts);font-size:12px">Artilharia não disponível na API para este campeonato.</div>';
+    s+='<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:8px">Artilharia</div>' +
+      '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:14px;color:var(--ts);font-size:12px">Nao disponivel para este campeonato.</div>';
   }
-  s += '</div>';
-
-  s += '</div>'; // fecha grid
-
-  return s + '</div>';
+  s+='</div></div>';
+  return s+'</div>';
 }
 </script>
 
