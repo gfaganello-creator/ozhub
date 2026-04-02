@@ -507,7 +507,7 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
     <a href="#calendario">Calendário</a>
     
     <a href="#plantel-perf" onclick="abrirPlantelPerf(event)">Plantel</a>
-    <a href="#dep-tecnico" onclick="abrirDepTecnico(event)">Dep. Técnico</a>
+    <a href="#" onclick="abrirDepTecnico(event)">Dep. Técnico</a>
   </nav>
 </header>
 
@@ -4734,24 +4734,23 @@ document.addEventListener('DOMContentLoaded', function(){
 
 
 
-<section id="dep-tecnico" style="display:none">
-  <div class="sh rv">
-    <div><div class="stag">Análise</div><div class="sti">Departamento Técnico</div></div>
-    <div class="sme" id="dt-sync">Carregando...</div>
+<div id="mod-dep-tecnico" style="display:none;background:var(--bk);min-height:100vh">
+  <div class="el-header">
+    <div style="margin-bottom:16px"><button onclick="hubVoltarDT()" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);background:none;border:1px solid rgba(70,162,247,.2);border-radius:3px;padding:7px 14px;cursor:pointer">&#8592; Hub</button></div>
+    <div class="el-title">DEP. <em>TÉCNICO</em></div>
+    <div class="el-sub">Osasco Sporting &middot; Paulista A2 · <span id="dt-sync">Carregando...</span></div>
+    <div class="el-tabs" style="margin-top:20px">
+      <div class="el-tab active" id="dt-btn-adversario" onclick="dtVerTab('adversario',this)">Próx. Adversário</div>
+      <div class="el-tab" id="dt-btn-classificacao" onclick="dtVerTab('classificacao',this)">Classificação</div>
+      <div class="el-tab" id="dt-btn-elenco" onclick="dtVerTab('elenco',this)">Nosso Elenco</div>
+    </div>
   </div>
-
-  <!-- TABS -->
-  <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap">
-    <button onclick="dtVerTab('adversario')" id="dt-btn-adversario" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:8px 16px;border-radius:3px;cursor:pointer;background:var(--az);color:var(--bk);border:none">Próx. Adversário</button>
-    <button onclick="dtVerTab('classificacao')" id="dt-btn-classificacao" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:8px 16px;border-radius:3px;cursor:pointer;background:transparent;color:var(--ts);border:1px solid rgba(70,162,247,.2)">Classificação</button>
-    <button onclick="dtVerTab('elenco')" id="dt-btn-elenco" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:8px 16px;border-radius:3px;cursor:pointer;background:transparent;color:var(--ts);border:1px solid rgba(70,162,247,.2)">Nosso Elenco</button>
+  <div class="el-body">
+    <div id="dt-content">
+      <div style="color:var(--ts);font-size:13px">Carregando...</div>
+    </div>
   </div>
-
-  <!-- CONTEÚDO -->
-  <div id="dt-content">
-    <div style="color:var(--ts);font-size:13px">Carregando...</div>
-  </div>
-</section>
+</div>
 
 
 <script>
@@ -4765,12 +4764,17 @@ var dtDados = {};
 
 function abrirDepTecnico(e) {
   if(e) e.preventDefault();
-  var el = document.getElementById('dep-tecnico');
-  if(el) {
-    el.style.display = 'block';
-    setTimeout(function(){ el.scrollIntoView({behavior:'smooth'}); }, 100);
-  }
+  document.getElementById('tela-hub').style.display = 'none';
+  document.getElementById('mod-elenco').style.display = 'none';
+  hidePerformance();
+  document.getElementById('mod-dep-tecnico').style.display = 'block';
+  window.scrollTo(0, 0);
   dtCarregar();
+}
+function hubVoltarDT() {
+  document.getElementById('mod-dep-tecnico').style.display = 'none';
+  document.getElementById('tela-hub').style.display = 'flex';
+  window.scrollTo(0, 0);
 }
 
 async function dtFetch(endpoint) {
@@ -4858,13 +4862,9 @@ function dtVerTab(tab) {
     var btn = document.getElementById('dt-btn-'+t);
     if(!btn) return;
     if(t === tab) {
-      btn.style.background = 'var(--az)';
-      btn.style.color = 'var(--bk)';
-      btn.style.border = 'none';
+      btn.classList.add('active');
     } else {
-      btn.style.background = 'transparent';
-      btn.style.color = 'var(--ts)';
-      btn.style.border = '1px solid rgba(70,162,247,.2)';
+      btn.classList.remove('active');
     }
   });
   dtRenderTab();
