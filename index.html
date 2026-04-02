@@ -4794,6 +4794,126 @@ async function dtFetch(endpoint) {
   } catch(e) { console.warn('DT API:', endpoint, e.message); return null; }
 }
 
+// ── Carrega Plantel direto da Volt (independente do NSP estar aberto) ──
+var DT_VOLT_SID = '1O1Mx6wbrd1pGNpim0-OnWcymwqIuUKbrLBA8GipoF28';
+var DT_LES_SID  = '1zAE3Z04cpdVrdysAIyKu0xmjjOQkbIHgUD_KDIqNVZo';
+var DT_VOLT_BASE = 'https://docs.google.com/spreadsheets/d/' + DT_VOLT_SID + '/gviz/tq?tqx=out:csv&sheet=';
+var DT_LES_BASE  = 'https://docs.google.com/spreadsheets/d/' + DT_LES_SID  + '/gviz/tq?tqx=out:csv&sheet=';
+
+
+async function dtCarregarPlantel() {
+  // Se NSP já carregou, usa os dados em memória diretamente
+  if(window.nspCadastro && nspCadastro.length > 0) {
+    dtState.dtCadastro    = nspCadastro;
+    dtState.dtRecuperacao = nspRecuperacao || [];
+    // Atualiza o bloco de plantel se já estiver renderizado
+    var el = document.getElementById('dt-plantel-content');
+    if(el) el.innerHTML = dtPlantelHtml();
+    return;
+  }
+  // Senão, busca direto da Volt
+  try {
+    var resArr = await Promise.all([
+      fetch(DT_VOLT_BASE + encodeURIComponent('Cadastro')),
+      fetch(DT_LES_BASE  + encodeURIComponent('BD Recuperação e Prontidão'))
+    ]);
+    var t1 = await resArr[0].text();
+    var t4 = await resArr[1].text();
+    dtState.dtCadastro    = nspParseSheet(t1).filter(function(r){ return r['Nome'] && r['Nome'].trim(); });
+    dtState.dtRecuperacao = nspParseSheet(t4).filter(function(r){ return r['Nome']; });
+  } catch(e) {
+    dtState.dtCadastro    = [];
+    dtState.dtRecuperacao = [];
+    console.warn('dtCarregarPlantel:', e);
+  }
+  // Atualiza o bloco de plantel se já estiver renderizado
+  var el = document.getElementById('dt-plantel-content');
+  if(el) el.innerHTML = dtPlantelHtml();
+}
+
+// ── Gera HTML do plantel (usa dtState.dtCadastro / dtState.dtRecuperacao) ──
+function dtPlantelHtml() {
+  var cadastro    = dtState.dtCadastro    || (window.nspCadastro    ? nspCadastro    : []);
+  var recuperacao = dtState.dtRecuperacao || (window.nspRecuperacao ? nspRecuperacao : []);
+
+  if(cadastro.length === 0) {
+    return '<div style="color:var(--ts);font-size:12px">Carregando dados do plantel...</div>';
+  }
+
+  var aptMap = {};
+  recuperacao.forEach(function(r){
+    if(r['Nome']) aptMap[r['Nome']] = r['Característica']||r['Caracteristica']||'';
+  });
+
+  var aptos = [], rehab = [];
+  var porPos = {};
+  cadastro.forEach(function(r){
+    var apt = aptMap[r['Nome']]||'';
+    var pos = r['Posição']||r['Posicao']||'Outros';
+    var obj = { nome:r['Nome'], pos:pos, apt:apt, lat:r['Lateralidade']||'' };
+    if(apt.toLowerCase().indexOf('apronto')>=0) {
+      aptos.push(obj);
+      if(!porPos[pos]) porPos[pos] = [];
+      porPos[pos].push(obj);
+    } else if(apt) {
+      rehab.push(obj);
+    }
+  });
+
+  var html = '';
+
+  // KPIs
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">' +
+    '<div style="background:rgba(46,204,142,.08);border:1px solid rgba(46,204,142,.2);border-radius:6px;padding:16px;text-align:center">' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:48px;color:var(--gr);line-height:1">'+aptos.length+'</div>' +
+      '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(46,204,142,.7);margin-top:4px">Aptos para Jogar</div>' +
+    '</div>' +
+    '<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:16px;text-align:center">' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:48px;color:var(--ye);line-height:1">'+rehab.length+'</div>' +
+      '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(245,158,11,.7);margin-top:4px">Em Reabilitação</div>' +
+    '</div>' +
+    '<div style="background:rgba(70,162,247,.05);border:1px solid rgba(70,162,247,.15);border-radius:6px;padding:16px;text-align:center">' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:48px;color:var(--wh);line-height:1">'+cadastro.length+'</div>' +
+      '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);margin-top:4px">Total no Plantel</div>' +
+    '</div>' +
+  '</div>';
+
+  // Aptos por posição
+  if(aptos.length > 0) {
+    html += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:20px;margin-bottom:10px">' +
+      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:14px"> Disponíveis por Posição</div>' +
+      '<div style="display:flex;flex-direction:column;gap:10px">';
+    var posOrder = ['Goleiro','Lateral Dir.','Lateral Esq.','Zagueiro','Volante','Meia','Atacante'];
+    var allPos = posOrder.concat(Object.keys(porPos).filter(function(p){ return posOrder.indexOf(p)<0; }));
+    allPos.forEach(function(pos){
+      if(!porPos[pos] || porPos[pos].length === 0) return;
+      html += '<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">' +
+        '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ts);min-width:80px;padding-top:4px">'+pos+'</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+      porPos[pos].forEach(function(a){
+        html += '<span style="font-size:12px;font-weight:600;color:var(--wh);background:rgba(46,204,142,.1);border:1px solid rgba(46,204,142,.2);padding:3px 10px;border-radius:3px">'+
+          a.nome + (a.lat ? ' <span style="font-size:9px;opacity:.55">'+a.lat+'</span>' : '') + '</span>';
+      });
+      html += '</div></div>';
+    });
+    html += '</div></div>';
+  }
+
+  // Em Rehab
+  if(rehab.length > 0) {
+    html += '<div style="background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:16px 20px">' +
+      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--re);opacity:.8;margin-bottom:10px">Rehab — Reabilitação — Indisponíveis</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    rehab.forEach(function(a){
+      html += '<span title="'+a.apt+'" style="font-size:11px;color:rgba(240,244,248,.5);background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);padding:3px 10px;border-radius:3px">'+
+        a.nome+' <span style="font-size:9px;opacity:.6">'+a.pos+'</span></span>';
+    });
+    html += '</div></div>';
+  }
+
+  return html;
+}
+
 // ── Carregamento principal ──
 async function dtCarregar() {
   var syncEl = document.getElementById('dt-sync');
@@ -4893,6 +5013,9 @@ async function dtCarregar() {
     // 5. Renderizar dashboard base
     if(syncEl) syncEl.textContent = 'Base carregada · enriquecendo...';
     dtRenderDashboard();
+
+    // 6. Carregar plantel da Volt diretamente
+    dtCarregarPlantel();
 
     // 6. Enriquecer assincronamente (forma dos times, detalhes de partidas)
     dtEnriquecerAsync();
@@ -5026,7 +5149,7 @@ function dtRenderElencoAdv(elenco) {
       html += '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(70,162,247,.04)">' +
         '<span style="font-family:Bebas Neue,sans-serif;font-size:16px;color:rgba(70,162,247,.35);width:22px;text-align:center;flex-shrink:0">'+(camisa||'—')+'</span>' +
         (foto ? '<img src="'+foto+'" style="width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0">' :
-          '<div style="width:26px;height:26px;border-radius:50%;background:rgba(70,162,247,.08);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px">👤</div>') +
+          '<div style="width:26px;height:26px;border-radius:50%;background:rgba(70,162,247,.08);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px"></div>') +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-size:12px;font-weight:600;color:var(--wh);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nome+'</div>' +
           (idade||nac ? '<div style="font-size:9px;color:var(--ts)">'+(idade?idade+' anos':'')+(idade&&nac?' · ':'')+nac+'</div>' : '') +
@@ -5074,8 +5197,8 @@ function dtRenderStatsPartidas() {
         ['No Alvo', osStats.finalizacoes_no_alvo||'—', advStats.finalizacoes_no_alvo||'—'],
         ['Escanteios', osStats.escanteios||'—', advStats.escanteios||'—'],
         ['Faltas', osStats.faltas||'—', advStats.faltas||'—'],
-        ['Cartões', (osStats.cartoes_amarelos||0)+'🟡 '+(osStats.cartoes_vermelhos||0)+'🔴',
-                    (advStats.cartoes_amarelos||0)+'🟡 '+(advStats.cartoes_vermelhos||0)+'🔴'],
+        ['Cartões', (osStats.cartoes_amarelos||0)+'AM '+(osStats.cartoes_vermelhos||0)+'VM',
+                    (advStats.cartoes_amarelos||0)+'AM '+(advStats.cartoes_vermelhos||0)+'VM'],
       ];
       html += '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;font-size:11px">';
       statsList.forEach(function(s){
@@ -5314,7 +5437,7 @@ function dtBlocoProxJogo() {
     '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az);margin-bottom:14px">' + (dtState.proxJogo ? (dtState.proxJogo.rodada||'PRÓXIMA RODADA') : 'PRÓXIMO JOGO') + '</div>' +
     '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">' +
       (advEscudo ? '<img src="'+advEscudo+'" style="width:72px;height:72px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'">' :
-       '<div style="width:72px;height:72px;border-radius:50%;background:rgba(70,162,247,.08);border:2px solid rgba(70,162,247,.15);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">⚽</div>') +
+       '<div style="width:72px;height:72px;border-radius:50%;background:rgba(70,162,247,.08);border:2px solid rgba(70,162,247,.15);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">&#9917;</div>') +
       '<div>' +
         '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(24px,3vw,36px);color:var(--wh);letter-spacing:1px;line-height:1">'+advNome+'</div>' +
         (posAdvObj ? '<div style="font-size:11px;color:var(--ts);margin-top:4px">'+posAdvObj.pos+'º lugar · '+((posAdvObj.d.pontos||0))+' pts · '+(posAdvObj.d.jogos||0)+' jogos</div>' : '') +
@@ -5325,7 +5448,7 @@ function dtBlocoProxJogo() {
       '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Data</div><div style="font-size:11px;font-weight:700;color:var(--wh)">'+dtFmt+'</div></div>' +
       '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Horário</div><div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:var(--az);line-height:1;margin-top:2px">'+hrFmt+'</div></div>' +
       '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Contagem</div><div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:'+(diasNum<=3?'var(--re)':diasNum<=7?'var(--ye)':'var(--wh)')+';line-height:1;margin-top:2px">'+(diasNum===0?'HOJE':diasNum===1?'AMANHÃ':diasNum+'d')+'</div></div>' +
-      '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px;grid-column:span 2"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Mando</div><div style="font-size:13px;font-weight:700;color:'+(emCasa?'var(--gr)':'var(--ye)')+';margin-top:2px">'+(emCasa?'🏟️ Mandante — Casa':'✈️ Visitante — Fora')+'</div></div>' +
+      '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px;grid-column:span 2"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Mando</div><div style="font-size:13px;font-weight:700;color:'+(emCasa?'var(--gr)':'var(--ye)')+';margin-top:2px">'+(emCasa?'Casa Mandante — Casa':'Fora Visitante — Fora')+'</div></div>' +
       '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-bottom:3px">Estádio</div><div style="font-size:11px;font-weight:600;color:var(--wh);margin-top:2px">'+estadio+'</div></div>' +
     '</div>' +
   '</div>';
@@ -5370,7 +5493,7 @@ function dtBlocoProxJogo() {
     }).slice(0,5);
     if(artAdv.length > 0) {
       s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:16px 20px;margin-bottom:12px">' +
-        '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px">⚡ Jogadores Perigosos — ' + advNome + '</div>' +
+        '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px"> Jogadores Perigosos — ' + advNome + '</div>' +
         '<div style="display:flex;flex-direction:column;gap:6px">';
       artAdv.forEach(function(a, i){
         var jogador = a.atleta||a.jogador||a;
@@ -5392,13 +5515,13 @@ function dtBlocoProxJogo() {
 
   // Elenco do adversário (populado assíncronamente)
   s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:20px;margin-bottom:12px">' +
-    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px">📋 Elenco Completo — ' + advNome + '</div>' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px"> Elenco Completo — ' + advNome + '</div>' +
     '<div id="dt-elenco-adv"><div style="color:var(--ts);font-size:12px">Carregando elenco...</div></div>' +
   '</div>';
 
   // Stats das últimas partidas do Osasco
   s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:20px">' +
-    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px">📊 Últimas Partidas — Osasco Sporting (Stats)</div>' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px"> Últimas Partidas — Osasco Sporting (Stats)</div>' +
     '<div id="dt-stats-partidas"><div style="color:var(--ts);font-size:12px">Carregando estatísticas...</div></div>' +
   '</div>';
 
@@ -5409,83 +5532,10 @@ function dtBlocoProxJogo() {
 function dtBlocoPlantel() {
   var s = '<div style="margin-bottom:36px">' +
     '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">ELENCO</div>' +
-    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Plantel Disponível para o Jogo</div>';
-
-  var temNSP = window.nspCadastro && window.nspRecuperacao;
-  if(!temNSP) {
-    return s + '<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:20px">' +
-      '<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ye);margin-bottom:8px">⚠️ Dados do Plantel Não Carregados</div>' +
-      '<div style="font-size:13px;color:var(--ts)">Para ver os atletas disponíveis aqui, acesse o módulo <strong style="color:var(--wh)">NSP</strong> (Núcleo de Saúde &amp; Performance) primeiro. Os dados de aptidão serão cruzados automaticamente.</div>' +
-    '</div></div>';
-  }
-
-  var aptMap = {};
-  nspRecuperacao.forEach(function(r){ if(r['Nome']) aptMap[r['Nome']] = r['Característica']||r['Caracteristica']||''; });
-
-  var aptos = []; var rehab = []; var outros = [];
-  nspCadastro.forEach(function(r){
-    var apt = aptMap[r['Nome']]||'';
-    var pos = r['Posição']||r['Posicao']||'Outros';
-    var obj = { nome:r['Nome'], pos:pos, apt:apt, lat:r['Lateralidade']||'' };
-    if(apt.toLowerCase().indexOf('apronto')>=0) aptos.push(obj);
-    else if(apt) rehab.push(obj);
-    else outros.push(obj);
-  });
-
-  // Stats de disponibilidade
-  s += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">' +
-    '<div style="background:rgba(46,204,142,.08);border:1px solid rgba(46,204,142,.2);border-radius:6px;padding:16px;text-align:center">' +
-      '<div style="font-family:Bebas Neue,sans-serif;font-size:48px;color:var(--gr);line-height:1">'+aptos.length+'</div>' +
-      '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(46,204,142,.7);margin-top:4px">Aptos para Jogar</div>' +
-    '</div>' +
-    '<div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:16px;text-align:center">' +
-      '<div style="font-family:Bebas Neue,sans-serif;font-size:48px;color:var(--ye);line-height:1">'+rehab.length+'</div>' +
-      '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(245,158,11,.7);margin-top:4px">Em Reabilitação</div>' +
-    '</div>' +
-    '<div style="background:rgba(70,162,247,.05);border:1px solid rgba(70,162,247,.15);border-radius:6px;padding:16px;text-align:center">' +
-      '<div style="font-family:Bebas Neue,sans-serif;font-size:48px;color:var(--wh);line-height:1">'+nspCadastro.length+'</div>' +
-      '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);margin-top:4px">Total no Plantel</div>' +
-    '</div>' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Plantel Disponível para o Jogo</div>' +
+    '<div id="dt-plantel-content">' + dtPlantelHtml() + '</div>' +
   '</div>';
-
-  // Aptos por posição
-  var posOrder = ['Goleiro','Lateral Dir.','Lateral Esq.','Zagueiro','Volante','Meia','Atacante'];
-  var porPos = {};
-  aptos.forEach(function(a){
-    if(!porPos[a.pos]) porPos[a.pos] = [];
-    porPos[a.pos].push(a);
-  });
-
-  s += '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:20px;margin-bottom:12px">' +
-    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:14px">✅ Disponíveis por Posição</div>' +
-    '<div style="display:flex;flex-direction:column;gap:10px">';
-
-  var posKeys = posOrder.concat(Object.keys(porPos).filter(function(p){ return posOrder.indexOf(p)<0; }));
-  posKeys.forEach(function(pos){
-    if(!porPos[pos]) return;
-    s += '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
-      '<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ts);min-width:80px">'+pos+'</div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:6px">';
-    porPos[pos].forEach(function(a){
-      s += '<span style="font-size:12px;font-weight:600;color:var(--wh);background:rgba(46,204,142,.1);border:1px solid rgba(46,204,142,.2);padding:3px 10px;border-radius:3px">'+a.nome+(a.lat?' <span style="font-size:9px;opacity:.6">'+a.lat+'</span>':'')+'</span>';
-    });
-    s += '</div></div>';
-  });
-  s += '</div></div>';
-
-  // Em Rehab
-  if(rehab.length > 0) {
-    s += '<div style="background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:16px 20px">' +
-      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--re);opacity:.8;margin-bottom:10px">🏥 Em Reabilitação — Não Disponíveis</div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:6px">';
-    rehab.forEach(function(a){
-      var aptLabel = a.apt.substring(0,20) + (a.apt.length>20?'...':'');
-      s += '<span title="'+a.apt+'" style="font-size:11px;color:rgba(240,244,248,.5);background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);padding:3px 10px;border-radius:3px">'+a.nome+' <span style="font-size:9px;opacity:.6">'+a.pos+'</span></span>';
-    });
-    s += '</div></div>';
-  }
-
-  return s + '</div>';
+  return s;
 }
 
 // ── BLOCO C: Desempenho do Osasco ──
@@ -5560,7 +5610,7 @@ function dtBlocoDesempenho() {
       '<div><div style="font-size:10px;font-weight:700;color:'+(isProx?'var(--az)':jogo.jogado?'var(--ts)':'var(--ts)')+'">'+dtStr+'</div>' +
         '<div style="font-size:8px;color:rgba(122,155,181,.5)">'+(jogo.rodada||'').replace('Rodada','Rd').substring(0,8)+'</div></div>' +
       (advEscudo ? '<img src="'+advEscudo+'" style="width:24px;height:24px;object-fit:contain">' :
-        '<div style="width:24px;height:24px;border-radius:50%;background:rgba(70,162,247,.06);border:1px solid rgba(70,162,247,.1);display:flex;align-items:center;justify-content:center;font-size:10px">⚽</div>') +
+        '<div style="width:24px;height:24px;border-radius:50%;background:rgba(70,162,247,.06);border:1px solid rgba(70,162,247,.1);display:flex;align-items:center;justify-content:center;font-size:10px">&#9917;</div>') +
       '<div>' +
         '<div style="font-size:12px;font-weight:'+(isProx?'700':'500')+';color:'+(isProx?'var(--wh)':jogo.jogado?'rgba(240,244,248,.55)':'var(--wh)')+'">'+advNome+'</div>' +
         '<div style="font-size:10px;color:var(--ts)">'+(jogo.emCasa?'Casa':'Fora')+(p.estadio ? ' · '+p.estadio : '')+'</div>' +
@@ -5624,7 +5674,7 @@ function dtBlocoClassificacao() {
   // Artilharia
   s += '<div>';
   if(dtState.artilharia && Array.isArray(dtState.artilharia) && dtState.artilharia.length > 0) {
-    s += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:10px">🥇 Artilharia do Campeonato</div>' +
+    s += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:10px"> Artilharia do Campeonato</div>' +
       '<div style="display:flex;flex-direction:column;gap:5px">';
     dtState.artilharia.slice(0,12).forEach(function(a, i){
       var jogador = a.atleta||a.jogador||a;
