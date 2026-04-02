@@ -742,10 +742,10 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
       <div class="hcard__body"><div class="hcard__label">NSP</div><div class="hcard__sub">Nucleo de Saude &middot; Performance</div></div>
       <div class="hcard__badge badge-live">AO VIVO</div>
     </div>
-    <div class="hcard soon">
+    <div class="hcard active" onclick="hubFinanceiro()">
       <div class="hcard__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
       <div class="hcard__body"><div class="hcard__label">Financas</div><div class="hcard__sub">Orcamento &middot; Contratos</div></div>
-      <div class="hcard__badge badge-soon">EM BREVE</div>
+      <div class="hcard__badge badge-live">ATIVO</div>
     </div>
     <div class="hcard active" onclick="hubElenco()">
       <div class="hcard__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
@@ -772,6 +772,139 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
       <div class="hcard__body"><div class="hcard__label">Base e Formacao</div><div class="hcard__sub">Sub-17 &middot; Sub-20</div></div>
       <div class="hcard__badge badge-soon">EM BREVE</div>
     </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- MODAL SENHA FINANCEIRO                 -->
+<!-- ═══════════════════════════════════════ -->
+<div id="fin-auth-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:30000;align-items:center;justify-content:center" onclick="if(event.target===this)finAuthCancelar()">
+  <div style="background:rgba(8,16,26,.98);border:1px solid rgba(70,162,247,.2);border-radius:10px;width:100%;max-width:380px;padding:36px 32px;text-align:center;position:relative">
+    <!-- ícone cadeado -->
+    <div style="width:52px;height:52px;margin:0 auto 20px;background:rgba(70,162,247,.08);border:1px solid rgba(70,162,247,.2);border-radius:50%;display:flex;align-items:center;justify-content:center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--az)" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    </div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:8px">ACESSO RESTRITO</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#fff;margin-bottom:6px">MODULO FINANCEIRO</div>
+    <div style="font-size:11px;color:var(--ts);font-family:'Barlow Condensed',sans-serif;margin-bottom:28px">Insira a senha para continuar</div>
+
+    <!-- input senha -->
+    <div style="position:relative;margin-bottom:10px">
+      <input
+        id="fin-auth-input"
+        type="password"
+        placeholder="Senha de acesso"
+        maxlength="20"
+        onkeydown="if(event.key==='Enter')finAuthConfirmar()"
+        oninput="document.getElementById('fin-auth-erro').style.display='none'"
+        style="width:100%;background:rgba(70,162,247,.06);border:1px solid rgba(70,162,247,.2);border-radius:4px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600;letter-spacing:4px;text-align:center;padding:12px 44px 12px 16px;outline:none;transition:.2s;box-sizing:border-box"
+        onfocus="this.style.borderColor='rgba(70,162,247,.55)'"
+        onblur="this.style.borderColor='rgba(70,162,247,.2)'"
+      >
+      <button id="fin-auth-toggle" onclick="finAuthToggle()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--ts);padding:2px;display:flex;align-items:center">
+        <svg id="fin-eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg id="fin-eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+      </button>
+    </div>
+
+    <!-- msg erro -->
+    <div id="fin-auth-erro" style="display:none;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--re);margin-bottom:14px">Senha incorreta. Tente novamente.</div>
+
+    <!-- botoes -->
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button onclick="finAuthCancelar()" style="flex:1;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:11px;border-radius:3px;cursor:pointer;background:none;color:var(--ts);border:1px solid rgba(70,162,247,.15);transition:.2s" onmouseover="this.style.borderColor='rgba(70,162,247,.35)'" onmouseout="this.style.borderColor='rgba(70,162,247,.15)'">Cancelar</button>
+      <button onclick="finAuthConfirmar()" style="flex:2;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:11px;border-radius:3px;cursor:pointer;background:var(--az);color:var(--bk);border:none;transition:.2s" onmouseover="this.style.background='#6ab8fa'" onmouseout="this.style.background='var(--az)'">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- MÓDULO FINANCEIRO                      -->
+<!-- ═══════════════════════════════════════ -->
+<div id="mod-financeiro" style="display:none;min-height:100vh;background:var(--bk);padding-top:104px">
+  <div style="max-width:1400px;margin:0 auto;padding:0 48px 80px">
+
+    <!-- Header -->
+    <div style="margin-bottom:28px">
+      <button onclick="hubVoltarFin()" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);background:none;border:1px solid rgba(70,162,247,.2);border-radius:3px;padding:7px 14px;cursor:pointer;margin-bottom:20px">&#8592; Hub</button>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:18px;border-bottom:1px solid rgba(70,162,247,.1)">
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--az);margin-bottom:6px">MODULO FINANCEIRO</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,5vw,52px);line-height:1;letter-spacing:2px;color:#fff">FINANCAS <em style="color:var(--az);font-style:normal">OSASCO SPORTING</em></div>
+          <div style="font-size:12px;color:var(--ts);margin-top:6px;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px">Dashboard executivo &middot; Looker Studio</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;background:rgba(46,204,142,.06);border:1px solid rgba(46,204,142,.2);border-radius:4px">
+          <div style="width:7px;height:7px;border-radius:50%;background:var(--gr);box-shadow:0 0 6px var(--gr);animation:pulse 2s infinite"></div>
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gr)">DADOS AO VIVO</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Summary Bar -->
+    <div id="fin-kpi-bar" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:28px">
+      <div style="background:rgba(70,162,247,.05);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:16px 20px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">ORCAMENTO GERAL</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;line-height:1">Looker</div>
+        <div style="font-size:10px;color:var(--ts);font-family:'Barlow Condensed',sans-serif;margin-top:2px">Studio</div>
+      </div>
+      <div style="background:rgba(46,204,142,.05);border:1px solid rgba(46,204,142,.12);border-radius:6px;padding:16px 20px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">FOLHA SALARIAL</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;line-height:1">Looker</div>
+        <div style="font-size:10px;color:var(--ts);font-family:'Barlow Condensed',sans-serif;margin-top:2px">Studio</div>
+      </div>
+      <div style="background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.12);border-radius:6px;padding:16px 20px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">FLUXO DE CAIXA</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;line-height:1">Looker</div>
+        <div style="font-size:10px;color:var(--ts);font-family:'Barlow Condensed',sans-serif;margin-top:2px">Studio</div>
+      </div>
+      <div style="background:rgba(70,162,247,.05);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:16px 20px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">PATROCINADORES</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;line-height:1">Looker</div>
+        <div style="font-size:10px;color:var(--ts);font-family:'Barlow Condensed',sans-serif;margin-top:2px">Studio</div>
+      </div>
+      <div style="background:rgba(46,204,142,.05);border:1px solid rgba(46,204,142,.12);border-radius:6px;padding:16px 20px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">KPI EXECUTIVO</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;line-height:1">Looker</div>
+        <div style="font-size:10px;color:var(--ts);font-family:'Barlow Condensed',sans-serif;margin-top:2px">Studio</div>
+      </div>
+    </div>
+
+    <!-- Looker Studio iframe -->
+    <div style="background:rgba(70,162,247,.04);border:1px solid rgba(70,162,247,.12);border-radius:8px;overflow:hidden;position:relative">
+      <!-- iframe header -->
+      <div style="padding:14px 20px;background:rgba(70,162,247,.06);border-bottom:1px solid rgba(70,162,247,.1);display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:12px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--az)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az)">DASHBOARD FINANCEIRO &middot; LOOKER STUDIO</span>
+        </div>
+        <a href="https://lookerstudio.google.com/u/0/reporting/45a79d54-2f63-4738-af85-7477f341a39b/page/p_0vsnwpho1d?s=hFVUo73L-zU" target="_blank" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts);text-decoration:none;padding:6px 12px;border:1px solid rgba(70,162,247,.2);border-radius:3px;transition:.2s" onmouseover="this.style.color='var(--az)';this.style.borderColor='rgba(70,162,247,.5)'" onmouseout="this.style.color='var(--ts)';this.style.borderColor='rgba(70,162,247,.2)'">Abrir em nova aba &#8599;</a>
+      </div>
+      <!-- iframe container -->
+      <div style="position:relative;width:100%;padding-bottom:62.5%;background:#0a1520">
+        <iframe
+          id="fin-looker-iframe"
+          src="https://lookerstudio.google.com/embed/reporting/45a79d54-2f63-4738-af85-7477f341a39b/page/p_0vsnwpho1d"
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"
+          allowfullscreen
+          sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          loading="lazy">
+        </iframe>
+        <!-- loading overlay -->
+        <div id="fin-iframe-loading" style="position:absolute;inset:0;background:#0a1520;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;pointer-events:none">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(70,162,247,.4)" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:rgba(122,155,181,.6)">Carregando dashboard...</div>
+          <div style="width:120px;height:2px;background:rgba(70,162,247,.1);border-radius:1px;overflow:hidden">
+            <div style="height:100%;background:var(--az);border-radius:1px;animation:progressBar 1.8s ease-in-out infinite"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer note -->
+    <div style="margin-top:16px;text-align:center">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(122,155,181,.4)">Dados fornecidos pelo Google Looker Studio &middot; Osasco Sporting FC</span>
+    </div>
+
   </div>
 </div>
 
@@ -1547,9 +1680,91 @@ function hubElenco() {
 }
 function hubVoltar() {
   document.getElementById('mod-elenco').style.display = 'none';
+  document.getElementById('mod-financeiro').style.display = 'none';
   hidePerformance();
   document.getElementById('tela-hub').style.display = 'flex';
   window.scrollTo(0, 0);
+}
+var _finAutenticado = false;
+function hubFinanceiro() {
+  document.getElementById('tela-hub').style.display = 'none';
+  document.getElementById('mod-elenco').style.display = 'none';
+  hidePerformance();
+  window.scrollTo(0, 0);
+  if (_finAutenticado) {
+    document.getElementById('mod-financeiro').style.display = 'block';
+    finIniciar();
+  } else {
+    finAbrirAuth();
+  }
+}
+function finAbrirAuth() {
+  var bg = document.getElementById('fin-auth-bg');
+  bg.style.display = 'flex';
+  setTimeout(function() {
+    var inp = document.getElementById('fin-auth-input');
+    if (inp) { inp.value = ''; inp.focus(); }
+    document.getElementById('fin-auth-erro').style.display = 'none';
+  }, 50);
+}
+function finAuthCancelar() {
+  document.getElementById('fin-auth-bg').style.display = 'none';
+  document.getElementById('tela-hub').style.display = 'flex';
+}
+function finAuthConfirmar() {
+  var inp = document.getElementById('fin-auth-input');
+  var val = inp ? inp.value : '';
+  if (val === 'OZ1112') {
+    _finAutenticado = true;
+    document.getElementById('fin-auth-bg').style.display = 'none';
+    document.getElementById('mod-financeiro').style.display = 'block';
+    finIniciar();
+  } else {
+    document.getElementById('fin-auth-erro').style.display = 'block';
+    if (inp) { inp.value = ''; inp.focus(); }
+    var box = document.querySelector('#fin-auth-bg > div');
+    if (box) {
+      box.style.animation = 'none';
+      box.style.transform = 'translateX(-8px)';
+      setTimeout(function(){ box.style.transform = 'translateX(8px)'; }, 60);
+      setTimeout(function(){ box.style.transform = 'translateX(-5px)'; }, 120);
+      setTimeout(function(){ box.style.transform = 'translateX(5px)'; }, 180);
+      setTimeout(function(){ box.style.transform = 'translateX(0)'; }, 240);
+    }
+  }
+}
+function finAuthToggle() {
+  var inp = document.getElementById('fin-auth-input');
+  var eyeOpen = document.getElementById('fin-eye-open');
+  var eyeClosed = document.getElementById('fin-eye-closed');
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    eyeOpen.style.display = 'none';
+    eyeClosed.style.display = 'block';
+  } else {
+    inp.type = 'password';
+    eyeOpen.style.display = 'block';
+    eyeClosed.style.display = 'none';
+  }
+}
+function hubVoltarFin() {
+  document.getElementById('mod-financeiro').style.display = 'none';
+  document.getElementById('tela-hub').style.display = 'flex';
+  window.scrollTo(0, 0);
+}
+function finIniciar() {
+  var iframe = document.getElementById('fin-looker-iframe');
+  var loading = document.getElementById('fin-iframe-loading');
+  if (!iframe) return;
+  if (loading) loading.style.display = 'flex';
+  iframe.onload = function() {
+    if (loading) {
+      loading.style.transition = 'opacity .5s';
+      loading.style.opacity = '0';
+      setTimeout(function(){ loading.style.display = 'none'; }, 500);
+    }
+  };
 }
 var elDados2 = [];
 var elFiltro2 = 'ativo';
@@ -4789,6 +5004,13 @@ function abrirDepTecnico(e) {
   hidePerformance();
   document.getElementById('mod-dep-tecnico').style.display = 'block';
   window.scrollTo(0, 0);
+  // Carrega NSP em background se ainda nao foi carregado
+  if(!window.nspCadastro || nspCadastro.length === 0) {
+    nspCarregar().then(function(){
+      var el = document.getElementById('dt-plantel-content');
+      if(el) el.innerHTML = dtPlantelHtml();
+    });
+  }
   dtCarregar();
 }
 function hubVoltarDT() {
@@ -4798,6 +5020,8 @@ function hubVoltarDT() {
 }
 
 // ── API ──
+function dtDelay(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+
 async function dtFetch(endpoint) {
   try {
     var res = await fetch(DT_API_BASE + endpoint, {
@@ -4942,7 +5166,7 @@ async function dtCarregar() {
     '<div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--az);margin-bottom:8px">Conectando...</div>' +
     '<div>Buscando dados do campeonato</div></div>';
   try {
-    // 1. Descobrir campeonato ativo
+    // 1. Descobrir campeonato ativo (apenas na primeira carga)
     if(!dtState.campId) {
       var camps = await dtFetch('/campeonatos');
       if(camps && Array.isArray(camps)) {
@@ -4965,15 +5189,14 @@ async function dtCarregar() {
       if(cn) cn.textContent = dtState.campNome;
     }
     var cid = dtState.campId;
-    // 2. Carregar dados em paralelo
-    var results = await Promise.all([
-      dtFetch('/campeonatos/'+cid+'/tabela'),
-      dtFetch('/campeonatos/'+cid+'/fases'),
-      dtFetch('/campeonatos/'+cid+'/artilharia')
-    ]);
-    dtState.classif    = dtNormClassif(results[0]);
-    var fazes          = results[1];
-    dtState.artilharia = results[2];
+    // 2. Carregar dados sequencialmente (evitar rate limit 429)
+    var tabelaRaw = await dtFetch('/campeonatos/'+cid+'/tabela');
+    dtState.classif = dtNormClassif(tabelaRaw);
+    await dtDelay(300);
+    var fazes = await dtFetch('/campeonatos/'+cid+'/fases');
+    await dtDelay(300);
+    dtState.artilharia = await dtFetch('/campeonatos/'+cid+'/artilharia');
+    await dtDelay(300);
     // 3. Rodadas
     var rodadas = null;
     if(fazes && Array.isArray(fazes) && fazes.length>0) {
@@ -4984,7 +5207,7 @@ async function dtCarregar() {
         else if(Array.isArray(fd)) rodadas=fd;
       }
     }
-    if(!rodadas) rodadas = await dtFetch('/campeonatos/'+cid+'/rodadas');
+    if(!rodadas) { await dtDelay(300); rodadas = await dtFetch('/campeonatos/'+cid+'/rodadas'); }
     dtState.rodadas = rodadas;
     // 4. Jogos do Osasco
     dtState.proxJogo=null; dtState.adversario=null; dtState.jogosOsasco=[];
@@ -5017,7 +5240,7 @@ async function dtCarregar() {
     if(syncEl) syncEl.textContent = 'Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     dtRenderDashboard();
     dtCarregarPlantel();
-    dtEnriquecerAsync();
+    // dtEnriquecerAsync desativado para evitar rate limit (muitas requisicoes por time)
   } catch(e) {
     console.error('[DT]', e);
     if(syncEl) syncEl.textContent = 'Erro: '+e.message;
