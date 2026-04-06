@@ -742,10 +742,10 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
       <div class="hcard__body"><div class="hcard__label">NSP</div><div class="hcard__sub">Nucleo de Saude &middot; Performance</div></div>
       <div class="hcard__badge badge-live">AO VIVO</div>
     </div>
-    <div class="hcard active" onclick="hubFinanceiro()">
+    <div class="hcard soon">
       <div class="hcard__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
       <div class="hcard__body"><div class="hcard__label">Financas</div><div class="hcard__sub">Orcamento &middot; Contratos</div></div>
-      <div class="hcard__badge badge-live">ATIVO</div>
+      <div class="hcard__badge badge-soon">EM BREVE</div>
     </div>
     <div class="hcard active" onclick="hubElenco()">
       <div class="hcard__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
@@ -772,225 +772,6 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
       <div class="hcard__body"><div class="hcard__label">Base e Formacao</div><div class="hcard__sub">Sub-17 &middot; Sub-20</div></div>
       <div class="hcard__badge badge-soon">EM BREVE</div>
     </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════ -->
-<!-- MODAL SENHA FINANCEIRO                 -->
-<!-- ═══════════════════════════════════════ -->
-<div id="fin-auth-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:30000;align-items:center;justify-content:center" onclick="if(event.target===this)finAuthCancelar()">
-  <div style="background:rgba(8,16,26,.98);border:1px solid rgba(70,162,247,.2);border-radius:10px;width:100%;max-width:380px;padding:36px 32px;text-align:center;position:relative">
-    <!-- ícone cadeado -->
-    <div style="width:52px;height:52px;margin:0 auto 20px;background:rgba(70,162,247,.08);border:1px solid rgba(70,162,247,.2);border-radius:50%;display:flex;align-items:center;justify-content:center">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--az)" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-    </div>
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:8px">ACESSO RESTRITO</div>
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#fff;margin-bottom:6px">MODULO FINANCEIRO</div>
-    <div style="font-size:11px;color:var(--ts);font-family:'Barlow Condensed',sans-serif;margin-bottom:28px">Insira a senha para continuar</div>
-
-    <!-- input senha -->
-    <div style="position:relative;margin-bottom:10px">
-      <input
-        id="fin-auth-input"
-        type="password"
-        placeholder="Senha de acesso"
-        maxlength="20"
-        onkeydown="if(event.key==='Enter')finAuthConfirmar()"
-        oninput="document.getElementById('fin-auth-erro').style.display='none'"
-        style="width:100%;background:rgba(70,162,247,.06);border:1px solid rgba(70,162,247,.2);border-radius:4px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600;letter-spacing:4px;text-align:center;padding:12px 44px 12px 16px;outline:none;transition:.2s;box-sizing:border-box"
-        onfocus="this.style.borderColor='rgba(70,162,247,.55)'"
-        onblur="this.style.borderColor='rgba(70,162,247,.2)'"
-      >
-      <button id="fin-auth-toggle" onclick="finAuthToggle()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--ts);padding:2px;display:flex;align-items:center">
-        <svg id="fin-eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        <svg id="fin-eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-      </button>
-    </div>
-
-    <!-- msg erro -->
-    <div id="fin-auth-erro" style="display:none;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--re);margin-bottom:14px">Senha incorreta. Tente novamente.</div>
-
-    <!-- botoes -->
-    <div style="display:flex;gap:10px;margin-top:20px">
-      <button onclick="finAuthCancelar()" style="flex:1;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:11px;border-radius:3px;cursor:pointer;background:none;color:var(--ts);border:1px solid rgba(70,162,247,.15);transition:.2s" onmouseover="this.style.borderColor='rgba(70,162,247,.35)'" onmouseout="this.style.borderColor='rgba(70,162,247,.15)'">Cancelar</button>
-      <button onclick="finAuthConfirmar()" style="flex:2;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:11px;border-radius:3px;cursor:pointer;background:var(--az);color:var(--bk);border:none;transition:.2s" onmouseover="this.style.background='#6ab8fa'" onmouseout="this.style.background='var(--az)'">Entrar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════ -->
-<!-- MÓDULO FINANCEIRO                      -->
-<!-- ═══════════════════════════════════════ -->
-<div id="mod-financeiro" style="display:none;min-height:100vh;background:var(--bk);padding-top:104px">
-  <div style="max-width:1400px;margin:0 auto;padding:0 48px 80px">
-
-    <!-- Header -->
-    <div style="margin-bottom:28px">
-      <button onclick="hubVoltarFin()" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);background:none;border:1px solid rgba(70,162,247,.2);border-radius:3px;padding:7px 14px;cursor:pointer;margin-bottom:20px">&#8592; Hub</button>
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:18px;border-bottom:1px solid rgba(70,162,247,.1)">
-        <div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--az);margin-bottom:6px">MODULO FINANCEIRO</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,5vw,52px);line-height:1;letter-spacing:2px;color:#fff">FINANCAS <em style="color:var(--az);font-style:normal">OSASCO SPORTING</em></div>
-          <div style="font-size:12px;color:var(--ts);margin-top:6px;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px">Dashboard executivo &middot; Looker Studio</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;background:rgba(46,204,142,.06);border:1px solid rgba(46,204,142,.2);border-radius:4px">
-          <div style="width:7px;height:7px;border-radius:50%;background:var(--gr);box-shadow:0 0 6px var(--gr);animation:pulse 2s infinite"></div>
-          <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gr)">DADOS AO VIVO</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Loading state -->
-    <div id="fin-loading" style="text-align:center;padding:80px 0">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:16px">Carregando dados financeiros...</div>
-      <div style="width:160px;height:2px;background:rgba(70,162,247,.1);border-radius:1px;overflow:hidden;margin:0 auto">
-        <div style="height:100%;background:var(--az);border-radius:1px;animation:progressBar 1.8s ease-in-out infinite"></div>
-      </div>
-    </div>
-
-    <!-- Dashboard (hidden until loaded) -->
-    <div id="fin-dashboard" style="display:none">
-
-      <!-- KPI Row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
-        <div style="background:rgba(70,162,247,.05);border:1px solid rgba(70,162,247,.14);border-radius:8px;padding:22px 24px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--ts);margin-bottom:10px">TOTAL TRANSFERIDO</div>
-          <div id="fin-kpi-total" style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:#fff;line-height:1;letter-spacing:1px">-</div>
-          <div style="font-size:10px;color:var(--ts);font-family:'Barlow Condensed',sans-serif;margin-top:4px">Soma de todos os aportes</div>
-        </div>
-        <div style="background:rgba(70,162,247,.05);border:1px solid rgba(70,162,247,.14);border-radius:8px;padding:22px 24px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--ts);margin-bottom:10px">TOTAL APORTADO EM EQUITY</div>
-          <div id="fin-kpi-equity" style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:var(--az);line-height:1;letter-spacing:1px">-</div>
-          <div style="font-size:10px;color:var(--ts);font-family:'Barlow Condensed',sans-serif;margin-top:4px">Modalidade Equity</div>
-        </div>
-        <div style="background:rgba(70,162,247,.05);border:1px solid rgba(70,162,247,.14);border-radius:8px;padding:22px 24px;position:relative;overflow:hidden">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--ts);margin-bottom:10px">EQUITY ENDEREÇADO</div>
-          <div id="fin-kpi-pct" style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:var(--gr);line-height:1;letter-spacing:1px">-</div>
-          <div style="font-size:10px;color:var(--ts);font-family:'Barlow Condensed',sans-serif;margin-top:4px">Do valuation total</div>
-          <!-- gauge bar -->
-          <div style="margin-top:12px;height:4px;background:rgba(70,162,247,.1);border-radius:2px;overflow:hidden">
-            <div id="fin-gauge-bar" style="height:100%;background:var(--gr);border-radius:2px;width:0%;transition:width 1s ease"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;margin-top:4px">
-            <span style="font-size:9px;color:var(--ts);font-family:'Barlow Condensed',sans-serif">0%</span>
-            <span style="font-size:9px;color:var(--ts);font-family:'Barlow Condensed',sans-serif">70%</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- KPI Row 2 -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
-        <div style="background:rgba(46,204,142,.04);border:1px solid rgba(46,204,142,.12);border-radius:6px;padding:14px 18px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">TOTAL COMPROMETIDO</div>
-          <div id="fin-kpi-comp" style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--gr);line-height:1">-</div>
-        </div>
-        <div style="background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.12);border-radius:6px;padding:14px 18px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">CAPTABLE FINAL</div>
-          <div id="fin-kpi-captable" style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--ye);line-height:1">-</div>
-        </div>
-        <div style="background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.12);border-radius:6px;padding:14px 18px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">FALTANTE COMPROMETIDO</div>
-          <div id="fin-kpi-faltante" style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--re);line-height:1">-</div>
-        </div>
-        <div style="background:rgba(70,162,247,.04);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:14px 18px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:6px">INVESTIDORES ATIVOS</div>
-          <div id="fin-kpi-inv" style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--az);line-height:1">-</div>
-        </div>
-      </div>
-
-      <!-- Captable table -->
-      <div style="background:rgba(70,162,247,.03);border:1px solid rgba(70,162,247,.1);border-radius:8px;overflow:hidden;margin-bottom:20px">
-        <div style="padding:16px 20px;border-bottom:1px solid rgba(70,162,247,.08);display:flex;align-items:center;justify-content:space-between">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az)">CAPTABLE</div>
-          <div style="font-size:10px;color:var(--ts);font-family:'Barlow Condensed',sans-serif">Consolidado Investidores</div>
-        </div>
-        <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;font-family:'Barlow Condensed',sans-serif">
-            <thead>
-              <tr style="border-bottom:1px solid rgba(70,162,247,.1)">
-                <th style="text-align:left;padding:10px 20px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">#</th>
-                <th style="text-align:left;padding:10px 12px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Investidor</th>
-                <th style="text-align:right;padding:10px 12px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Total Transferido</th>
-                <th style="text-align:right;padding:10px 12px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Montante Equity</th>
-                <th style="text-align:right;padding:10px 12px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Total Comprometido</th>
-                <th style="text-align:right;padding:10px 12px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Equity Endereçado</th>
-                <th style="text-align:right;padding:10px 20px 10px 12px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Captable Final</th>
-              </tr>
-            </thead>
-            <tbody id="fin-captable-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Charts row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
-
-        <!-- Bar chart: aportes por mes -->
-        <div style="background:rgba(70,162,247,.03);border:1px solid rgba(70,162,247,.1);border-radius:8px;padding:20px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az);margin-bottom:16px">Total Transferido por Mes e Modalidade</div>
-          <div id="fin-bar-chart" style="display:flex;align-items:flex-end;gap:8px;height:140px;overflow-x:auto;padding-bottom:4px"></div>
-          <div id="fin-bar-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px"></div>
-        </div>
-
-        <!-- Pie chart: por investidor -->
-        <div style="background:rgba(70,162,247,.03);border:1px solid rgba(70,162,247,.1);border-radius:8px;padding:20px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az);margin-bottom:16px">Total Transferido por Investidor</div>
-          <div style="display:flex;align-items:center;gap:20px">
-            <canvas id="fin-pie-inv" width="140" height="140" style="flex-shrink:0"></canvas>
-            <div id="fin-pie-inv-legend" style="font-family:'Barlow Condensed',sans-serif;font-size:11px"></div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Charts row 2 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
-
-        <!-- Pie: por finalidade -->
-        <div style="background:rgba(70,162,247,.03);border:1px solid rgba(70,162,247,.1);border-radius:8px;padding:20px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az);margin-bottom:16px">Total Transferido por Finalidade</div>
-          <div style="display:flex;align-items:center;gap:20px">
-            <canvas id="fin-pie-mod" width="140" height="140" style="flex-shrink:0"></canvas>
-            <div id="fin-pie-mod-legend" style="font-family:'Barlow Condensed',sans-serif;font-size:11px"></div>
-          </div>
-        </div>
-
-        <!-- Balanco -->
-        <div style="background:rgba(70,162,247,.03);border:1px solid rgba(70,162,247,.1);border-radius:8px;padding:20px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az);margin-bottom:16px">Balanco de Transferencias</div>
-          <table style="width:100%;border-collapse:collapse;font-family:'Barlow Condensed',sans-serif">
-            <thead>
-              <tr style="border-bottom:1px solid rgba(70,162,247,.1)">
-                <th style="text-align:left;padding:6px 0;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts)">Investidor</th>
-                <th style="text-align:right;padding:6px 0;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts)">Faltante</th>
-                <th style="text-align:right;padding:6px 0;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts)">Sem Atribuicao</th>
-              </tr>
-            </thead>
-            <tbody id="fin-balanco-tbody"></tbody>
-          </table>
-        </div>
-
-      </div>
-
-      <!-- Visao Clube / Antecipacoes -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
-        <div style="background:rgba(70,162,247,.03);border:1px solid rgba(70,162,247,.1);border-radius:8px;padding:20px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az);margin-bottom:16px">Visao Clube — Ultimas Transferencias</div>
-          <div id="fin-clube-lista" style="font-family:'Barlow Condensed',sans-serif;font-size:12px"></div>
-        </div>
-        <div style="background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.12);border-radius:8px;padding:20px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ye);margin-bottom:16px">Controle de Antecipacoes</div>
-          <div id="fin-antecip-lista" style="font-family:'Barlow Condensed',sans-serif;font-size:12px"></div>
-        </div>
-      </div>
-
-      <!-- Footer -->
-      <div style="text-align:center;margin-top:8px">
-        <span id="fin-update-ts" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(122,155,181,.35)"></span>
-      </div>
-
-    </div>
-
   </div>
 </div>
 
@@ -1752,14 +1533,12 @@ function showPerformance() {
   var f=document.querySelector('footer'); if(f) f.style.display='';
 }
 function hubPerformance() {
-  _finAutenticado = false;
   document.getElementById('tela-hub').style.display = 'none';
   document.getElementById('mod-elenco').style.display = 'none';
   showPerformance();
   window.scrollTo(0,0);
 }
 function hubElenco() {
-  _finAutenticado = false;
   document.getElementById('tela-hub').style.display = 'none';
   hidePerformance();
   document.getElementById('mod-elenco').style.display = 'block';
@@ -1767,437 +1546,11 @@ function hubElenco() {
   elCarregar();
 }
 function hubVoltar() {
-  _finAutenticado = false;
-  document.getElementById('mod-elenco').style.display = 'none';
-  document.getElementById('mod-financeiro').style.display = 'none';
-  hidePerformance();
-  document.getElementById('tela-hub').style.display = 'flex';
-  window.scrollTo(0, 0);
-}
-var _finAutenticado = false;
-var FIN_SID = '1-O2rXcpEtJ1oMdiq4Fvi95mB09xq4u0iEDWSPkP1IvI';
-var FIN_BASE = 'https://docs.google.com/spreadsheets/d/' + FIN_SID + '/gviz/tq?tqx=out:csv&sheet=';
-
-var FIN_CORES_MOD = {
-  'Equity': '#46A2F7',
-  'Mutuo': '#2ECC8E',
-  'Patrocinio': '#EF4444',
-  'Antecipacao': '#9CA3AF',
-  'Conta e Ordem': '#1e3a5f',
-  'Outros': '#7A9BB5'
-};
-var FIN_CORES_INV = ['#46A2F7','#2ECC8E','#F59E0B','#EF4444','#A78BFA','#34D399','#FB923C'];
-
-function hubFinanceiro() {
-  document.getElementById('tela-hub').style.display = 'none';
   document.getElementById('mod-elenco').style.display = 'none';
   hidePerformance();
-  window.scrollTo(0, 0);
-  if (_finAutenticado) {
-    document.getElementById('mod-financeiro').style.display = 'block';
-    finCarregar();
-  } else {
-    finAbrirAuth();
-  }
-}
-function finAbrirAuth() {
-  var bg = document.getElementById('fin-auth-bg');
-  bg.style.display = 'flex';
-  setTimeout(function() {
-    var inp = document.getElementById('fin-auth-input');
-    if (inp) { inp.value = ''; inp.focus(); }
-    document.getElementById('fin-auth-erro').style.display = 'none';
-  }, 50);
-}
-function finAuthCancelar() {
-  document.getElementById('fin-auth-bg').style.display = 'none';
-  document.getElementById('tela-hub').style.display = 'flex';
-}
-function finAuthConfirmar() {
-  var inp = document.getElementById('fin-auth-input');
-  var val = inp ? inp.value : '';
-  if (val === 'OZ1112') {
-    _finAutenticado = true;
-    document.getElementById('fin-auth-bg').style.display = 'none';
-    document.getElementById('mod-financeiro').style.display = 'block';
-    finCarregar();
-  } else {
-    document.getElementById('fin-auth-erro').style.display = 'block';
-    if (inp) { inp.value = ''; inp.focus(); }
-    var box = document.querySelector('#fin-auth-bg > div');
-    if (box) {
-      box.style.transform = 'translateX(-8px)';
-      setTimeout(function(){ box.style.transform = 'translateX(8px)'; }, 60);
-      setTimeout(function(){ box.style.transform = 'translateX(-5px)'; }, 120);
-      setTimeout(function(){ box.style.transform = 'translateX(5px)'; }, 180);
-      setTimeout(function(){ box.style.transform = 'translateX(0)'; }, 240);
-    }
-  }
-}
-function finAuthToggle() {
-  var inp = document.getElementById('fin-auth-input');
-  var eyeOpen = document.getElementById('fin-eye-open');
-  var eyeClosed = document.getElementById('fin-eye-closed');
-  if (!inp) return;
-  if (inp.type === 'password') {
-    inp.type = 'text';
-    eyeOpen.style.display = 'none';
-    eyeClosed.style.display = 'block';
-  } else {
-    inp.type = 'password';
-    eyeOpen.style.display = 'block';
-    eyeClosed.style.display = 'none';
-  }
-}
-function hubVoltarFin() {
-  _finAutenticado = false;
-  document.getElementById('mod-financeiro').style.display = 'none';
   document.getElementById('tela-hub').style.display = 'flex';
   window.scrollTo(0, 0);
 }
-
-function finPcsv(line) {
-  var r = [], c = '', q = false;
-  for (var i = 0; i < line.length; i++) {
-    var ch = line[i];
-    if (ch === '"') { q = !q; }
-    else if (ch === ',' && !q) { r.push(c.trim()); c = ''; }
-    else { c += ch; }
-  }
-  r.push(c.trim());
-  return r;
-}
-function finParseSheet(txt) {
-  if (!txt || txt.length < 5) return [];
-  var lines = txt.split('\n');
-  var hdrs = finPcsv(lines[0]).map(function(h){ return h.replace(/^"|"$/g,'').trim(); });
-  return lines.slice(1).filter(function(l){ return l.trim(); }).map(function(l) {
-    var vs = finPcsv(l);
-    var o = {};
-    hdrs.forEach(function(h, i){ o[h] = (vs[i] || '').replace(/^"|"$/g,'').trim(); });
-    return o;
-  });
-}
-function finNum(s) {
-  if (!s) return 0;
-  var n = parseFloat(s.replace(/\./g,'').replace(',','.').replace(/[^\d.\-]/g,''));
-  return isNaN(n) ? 0 : n;
-}
-function finFmt(n) {
-  if (n >= 1000000) return 'R$ ' + (n/1000000).toFixed(2).replace('.',',') + ' mi';
-  if (n >= 1000) return 'R$ ' + (n/1000).toFixed(1).replace('.',',') + ' mil';
-  return 'R$ ' + n.toFixed(2).replace('.',',');
-}
-function finFmtFull(n) {
-  return 'R$ ' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,'.').replace(/\.(\d{2})$/,',$1');
-}
-function finPct(s) {
-  if (!s) return 0;
-  return parseFloat(s.replace('%','').replace(',','.'));
-}
-function finCorMod(m) {
-  var k = Object.keys(FIN_CORES_MOD);
-  for (var i = 0; i < k.length; i++) {
-    if (m && m.toLowerCase().indexOf(k[i].toLowerCase()) >= 0) return FIN_CORES_MOD[k[i]];
-  }
-  return FIN_CORES_MOD['Outros'];
-}
-
-async function finCarregar() {
-  document.getElementById('fin-loading').style.display = 'block';
-  document.getElementById('fin-dashboard').style.display = 'none';
-  try {
-    var txtVis = await fetch(FIN_BASE + encodeURIComponent('Visao Investidores')).then(function(r){ return r.text(); });
-    var txtCon = await fetch(FIN_BASE + encodeURIComponent('Consolidado Investidores')).then(function(r){ return r.text(); });
-    var txtClu = await fetch(FIN_BASE + encodeURIComponent('Visao Clube')).then(function(r){ return r.text(); });
-    var visao = finParseSheet(txtVis);
-    var consol = finParseSheet(txtCon);
-    var clube = finParseSheet(txtClu);
-    finRenderDashboard(visao, consol, clube);
-  } catch(e) {
-    document.getElementById('fin-loading').innerHTML =
-      '<div style="color:var(--re);font-family:\'Barlow Condensed\',sans-serif;font-size:13px;padding:60px 0;text-align:center">' +
-      'Erro ao carregar dados. Verifique o compartilhamento da planilha.</div>';
-  }
-}
-
-function finRenderDashboard(visao, consol, clube) {
-  // ── KPIs ──
-  var totalTransf = 0, totalEquity = 0, totalComp = 0, totalCaptFinal = 0, totalFaltante = 0;
-  consol.forEach(function(r) {
-    totalTransf += finNum(r['Total Transferido'] || r['Total Transferido ']);
-    totalEquity += finNum(r['Equity'] || r['Montante para Equity']);
-    totalComp   += finNum(r['Total Comprometido'] || r['Total Comprometido ']);
-    totalFaltante += finNum(r['Faltante para C'] || r['Faltante para Comprometido']);
-  });
-
-  // Captable final médio ponderado
-  var pctList = consol.map(function(r){ return finPct(r['Captable Final'] || r['Equity Endereçado'] || '0'); });
-  totalCaptFinal = pctList.reduce(function(a,b){ return a+b; }, 0);
-
-  // Equity endereçado total
-  var pctEnd = consol.map(function(r){ return finPct(r['Equity Endereçado'] || r['Equity Enderec'] || '0'); });
-  var pctEndTotal = pctEnd.reduce(function(a,b){ return a+b; }, 0);
-
-  document.getElementById('fin-kpi-total').textContent = finFmt(totalTransf);
-  document.getElementById('fin-kpi-equity').textContent = finFmt(totalEquity);
-  document.getElementById('fin-kpi-pct').textContent = pctEndTotal.toFixed(2).replace('.',',') + '%';
-  document.getElementById('fin-kpi-comp').textContent = finFmt(totalComp);
-  document.getElementById('fin-kpi-captable').textContent = totalCaptFinal.toFixed(2).replace('.',',') + '%';
-  document.getElementById('fin-kpi-faltante').textContent = totalFaltante > 0 ? finFmt(totalFaltante) : 'R$ 0';
-  document.getElementById('fin-kpi-inv').textContent = consol.length;
-  setTimeout(function(){
-    var pct = Math.min(pctEndTotal / 70 * 100, 100);
-    var bar = document.getElementById('fin-gauge-bar');
-    if (bar) bar.style.width = pct + '%';
-  }, 100);
-
-  // ── Captable table ──
-  var tbody = document.getElementById('fin-captable-tbody');
-  var captHtml = '';
-  var maxTransf = Math.max.apply(null, consol.map(function(r){ return finNum(r['Total Transferido'] || ''); }));
-  consol.forEach(function(r, i) {
-    var inv = r['Investidor'] || '-';
-    var tt  = finNum(r['Total Transferido'] || '');
-    var eq  = finNum(r['Equity'] || r['Montante para Equity'] || '');
-    var tc  = finNum(r['Total Comprometido'] || '');
-    var pe  = finPct(r['Equity Endereçado'] || r['Equity Enderec'] || '0');
-    var cf  = finPct(r['Captable Final'] || '0');
-    var barW = maxTransf > 0 ? (tt / maxTransf * 100) : 0;
-    var cor = FIN_CORES_INV[i % FIN_CORES_INV.length];
-    captHtml +=
-      '<tr style="border-bottom:1px solid rgba(70,162,247,.06);transition:.15s" onmouseover="this.style.background=\'rgba(70,162,247,.04)\'" onmouseout="this.style.background=\'none\'">' +
-      '<td style="padding:10px 20px;font-family:\'Barlow Condensed\',sans-serif;font-size:12px;color:var(--ts)">' + (i+1) + '</td>' +
-      '<td style="padding:10px 12px;font-family:\'Barlow Condensed\',sans-serif;font-size:13px;font-weight:700;color:#fff">' +
-        '<div style="display:flex;align-items:center;gap:8px">' +
-        '<div style="width:8px;height:8px;border-radius:50%;background:' + cor + ';flex-shrink:0"></div>' + inv + '</div></td>' +
-      '<td style="padding:10px 12px;text-align:right">' +
-        '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:12px;color:#fff;margin-bottom:4px">' + finFmtFull(tt) + '</div>' +
-        '<div style="height:3px;background:rgba(70,162,247,.1);border-radius:2px;overflow:hidden">' +
-        '<div style="height:100%;background:' + cor + ';width:' + barW + '%"></div></div></td>' +
-      '<td style="padding:10px 12px;text-align:right;font-family:\'Barlow Condensed\',sans-serif;font-size:12px;color:var(--az)">' + finFmtFull(eq) + '</td>' +
-      '<td style="padding:10px 12px;text-align:right;font-family:\'Barlow Condensed\',sans-serif;font-size:12px;color:#fff">' + finFmtFull(tc) + '</td>' +
-      '<td style="padding:10px 12px;text-align:right;font-family:\'Barlow Condensed\',sans-serif;font-size:13px;font-weight:700;color:var(--gr)">' + pe.toFixed(2).replace('.',',') + '%</td>' +
-      '<td style="padding:10px 20px 10px 12px;text-align:right;font-family:\'Barlow Condensed\',sans-serif;font-size:13px;font-weight:700;color:var(--ye)">' + cf.toFixed(2).replace('.',',') + '%</td>' +
-      '</tr>';
-  });
-  // Total row
-  captHtml +=
-    '<tr style="border-top:1px solid rgba(70,162,247,.15);background:rgba(70,162,247,.04)">' +
-    '<td style="padding:10px 20px"></td>' +
-    '<td style="padding:10px 12px;font-family:\'Barlow Condensed\',sans-serif;font-size:12px;font-weight:700;color:var(--ts);letter-spacing:1px">TOTAL GERAL</td>' +
-    '<td style="padding:10px 12px;text-align:right;font-family:\'Barlow Condensed\',sans-serif;font-size:12px;font-weight:700;color:#fff">' + finFmtFull(totalTransf) + '</td>' +
-    '<td style="padding:10px 12px;text-align:right;font-family:\'Barlow Condensed\',sans-serif;font-size:12px;font-weight:700;color:var(--az)">' + finFmtFull(totalEquity) + '</td>' +
-    '<td style="padding:10px 12px;text-align:right;font-family:\'Barlow Condensed\',sans-serif;font-size:12px;font-weight:700;color:#fff">' + finFmtFull(totalComp) + '</td>' +
-    '<td style="padding:10px 12px;text-align:right;font-family:\'Barlow Condensed\',sans-serif;font-size:13px;font-weight:700;color:var(--gr)">' + pctEndTotal.toFixed(2).replace('.',',') + '%</td>' +
-    '<td style="padding:10px 20px 10px 12px;text-align:right;font-family:\'Barlow Condensed\',sans-serif;font-size:13px;font-weight:700;color:var(--ye)">' + totalCaptFinal.toFixed(2).replace('.',',') + '%</td>' +
-    '</tr>';
-  tbody.innerHTML = captHtml;
-
-  // ── Bar chart por mes/modalidade ──
-  var mesesMap = {};
-  visao.forEach(function(r) {
-    var data = r['Data'] || '';
-    var mes = '';
-    var m = data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (m) mes = m[2] + '/' + m[3].slice(2);
-    else { m = data.match(/(\d{4})-(\d{2})/); if (m) mes = m[2] + '/' + m[1].slice(2); }
-    if (!mes) return;
-    var mod = r['Modalidade'] || 'Outros';
-    var val = finNum(r['Valor'] || r['Valor Convertido em Equity'] || '');
-    if (!mesesMap[mes]) mesesMap[mes] = {};
-    mesesMap[mes][mod] = (mesesMap[mes][mod] || 0) + val;
-  });
-  var meses = Object.keys(mesesMap).sort(function(a, b) {
-    var pa = a.split('/'); var pb = b.split('/');
-    var ya = parseInt(pa[1]); var yb = parseInt(pb[1]);
-    if (ya !== yb) return ya - yb;
-    return parseInt(pa[0]) - parseInt(pb[0]);
-  });
-  var allMods = [];
-  meses.forEach(function(mes) {
-    Object.keys(mesesMap[mes]).forEach(function(mod) {
-      if (allMods.indexOf(mod) < 0) allMods.push(mod);
-    });
-  });
-  var maxBar = 0;
-  meses.forEach(function(mes) {
-    var tot = 0;
-    allMods.forEach(function(mod){ tot += (mesesMap[mes][mod] || 0); });
-    if (tot > maxBar) maxBar = tot;
-  });
-  var barHtml = '';
-  meses.forEach(function(mes) {
-    var segs = '';
-    var tot = 0;
-    allMods.forEach(function(mod){ tot += (mesesMap[mes][mod] || 0); });
-    var barH = maxBar > 0 ? Math.round((tot / maxBar) * 120) : 4;
-    allMods.forEach(function(mod) {
-      var v = mesesMap[mes][mod] || 0;
-      if (v <= 0) return;
-      var h = maxBar > 0 ? Math.round((v / maxBar) * 120) : 0;
-      segs += '<div style="width:100%;height:' + h + 'px;background:' + finCorMod(mod) + ';transition:.3s"></div>';
-    });
-    barHtml +=
-      '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-width:52px">' +
-      '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:9px;color:var(--ts)">' + finFmt(tot) + '</div>' +
-      '<div style="width:36px;display:flex;flex-direction:column-reverse;align-items:stretch;background:rgba(70,162,247,.05);border-radius:2px 2px 0 0;overflow:hidden">' + segs + '</div>' +
-      '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:9px;color:var(--ts);text-align:center;white-space:nowrap">' + mes + '</div>' +
-      '</div>';
-  });
-  document.getElementById('fin-bar-chart').innerHTML = barHtml;
-  var legHtml = '';
-  allMods.forEach(function(mod) {
-    legHtml += '<div style="display:flex;align-items:center;gap:5px">' +
-      '<div style="width:10px;height:10px;border-radius:2px;background:' + finCorMod(mod) + ';flex-shrink:0"></div>' +
-      '<span style="font-family:\'Barlow Condensed\',sans-serif;font-size:10px;color:var(--ts)">' + mod + '</span></div>';
-  });
-  document.getElementById('fin-bar-legend').innerHTML = legHtml;
-
-  // ── Pie: por investidor ──
-  var invMap = {};
-  visao.forEach(function(r) {
-    var inv = r['Investidor'] || 'Outros';
-    invMap[inv] = (invMap[inv] || 0) + finNum(r['Valor'] || '');
-  });
-  var invKeys = Object.keys(invMap);
-  finDrawPie('fin-pie-inv', invKeys.map(function(k){ return invMap[k]; }), invKeys, FIN_CORES_INV);
-  var legInv = '';
-  invKeys.forEach(function(k, i) {
-    var cor = FIN_CORES_INV[i % FIN_CORES_INV.length];
-    var pct2 = totalTransf > 0 ? (invMap[k] / totalTransf * 100).toFixed(1) : '0';
-    legInv += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">' +
-      '<div style="width:10px;height:10px;border-radius:50%;background:' + cor + ';flex-shrink:0"></div>' +
-      '<span style="color:#fff">' + k + '</span>' +
-      '<span style="color:var(--ts);margin-left:auto">' + pct2 + '%</span></div>';
-  });
-  document.getElementById('fin-pie-inv-legend').innerHTML = legInv;
-
-  // ── Pie: por modalidade ──
-  var modMap = {};
-  visao.forEach(function(r) {
-    var mod = r['Modalidade'] || 'Outros';
-    modMap[mod] = (modMap[mod] || 0) + finNum(r['Valor'] || '');
-  });
-  var modKeys = Object.keys(modMap);
-  var modCores = modKeys.map(function(k){ return finCorMod(k); });
-  finDrawPie('fin-pie-mod', modKeys.map(function(k){ return modMap[k]; }), modKeys, modCores);
-  var legMod = '';
-  var modTot = modKeys.reduce(function(s,k){ return s + modMap[k]; }, 0);
-  modKeys.forEach(function(k, i) {
-    var pct2 = modTot > 0 ? (modMap[k] / modTot * 100).toFixed(1) : '0';
-    legMod += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">' +
-      '<div style="width:10px;height:10px;border-radius:50%;background:' + modCores[i] + ';flex-shrink:0"></div>' +
-      '<span style="color:#fff">' + k + '</span>' +
-      '<span style="color:var(--ts);margin-left:auto">' + pct2 + '%</span></div>';
-  });
-  document.getElementById('fin-pie-mod-legend').innerHTML = legMod;
-
-  // ── Balanco ──
-  var balHtml = '';
-  var balFaltTotal = 0, balSemTotal = 0;
-  consol.forEach(function(r) {
-    var inv = r['Investidor'] || '-';
-    var falt = finNum(r['Faltante para C'] || r['Faltante para Comprometido'] || '');
-    var sem  = finNum(r['Sem Atribuição'] || r['Sem Atribuicao'] || '');
-    balFaltTotal += falt;
-    balSemTotal  += sem;
-    balHtml +=
-      '<tr style="border-bottom:1px solid rgba(70,162,247,.06)">' +
-      '<td style="padding:7px 0;font-family:\'Barlow Condensed\',sans-serif;font-size:12px;color:#fff">' + inv + '</td>' +
-      '<td style="padding:7px 0;text-align:right;font-family:\'Barlow Condensed\',sans-serif;font-size:12px;color:' + (falt > 0 ? 'var(--re)' : 'var(--ts)') + '">' + (falt > 0 ? finFmtFull(falt) : '0') + '</td>' +
-      '<td style="padding:7px 0;text-align:right;font-family:\'Barlow Condensed\',sans-serif;font-size:12px;color:' + (sem > 0 ? 'var(--ye)' : 'var(--ts)') + '">' + (sem > 0 ? finFmtFull(sem) : '0') + '</td>' +
-      '</tr>';
-  });
-  balHtml +=
-    '<tr style="border-top:1px solid rgba(70,162,247,.15)">' +
-    '<td style="padding:7px 0;font-family:\'Barlow Condensed\',sans-serif;font-size:11px;font-weight:700;color:var(--ts);letter-spacing:1px">TOTAL</td>' +
-    '<td style="padding:7px 0;text-align:right;font-family:\'Barlow Condensed\',sans-serif;font-size:12px;font-weight:700;color:var(--re)">' + finFmtFull(balFaltTotal) + '</td>' +
-    '<td style="padding:7px 0;text-align:right;font-family:\'Barlow Condensed\',sans-serif;font-size:12px;font-weight:700;color:var(--ye)">' + finFmtFull(balSemTotal) + '</td>' +
-    '</tr>';
-  document.getElementById('fin-balanco-tbody').innerHTML = balHtml;
-
-  // ── Visao Clube ──
-  var cluSorted = clube.slice().sort(function(a, b) {
-    return finDateVal(b['Data']) - finDateVal(a['Data']);
-  }).slice(0, 8);
-  var cluHtml = '';
-  cluSorted.forEach(function(r) {
-    var mod = r['Modalidade'] || '';
-    cluHtml +=
-      '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(70,162,247,.06)">' +
-      '<div>' +
-        '<span style="font-size:10px;color:var(--ts)">' + (r['Data'] || '') + '</span>' +
-        '<span style="font-size:12px;color:#fff;margin:0 8px">' + (r['De'] || '') + ' &rarr; ' + (r['Para'] || '') + '</span>' +
-        '<span style="font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:2px;background:' + finCorMod(mod) + '22;color:' + finCorMod(mod) + '">' + mod + '</span>' +
-      '</div>' +
-      '<span style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;color:#fff">' + finFmt(finNum(r['Valor'] || '')) + '</span>' +
-      '</div>';
-  });
-  document.getElementById('fin-clube-lista').innerHTML = cluHtml || '<div style="color:var(--ts);font-size:11px">Sem dados.</div>';
-
-  // ── Antecipacoes (A Receber != Custodia) ──
-  var antec = visao.filter(function(r) {
-    return r['A Receber'] && r['A Receber'].toLowerCase() !== 'custodia' && r['A Receber'].trim() !== '';
-  });
-  var antHtml = '';
-  if (antec.length === 0) {
-    antHtml = '<div style="color:var(--ts);font-size:11px">Nenhuma antecipacao pendente.</div>';
-  } else {
-    antec.slice(0, 6).forEach(function(r) {
-      antHtml +=
-        '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(245,158,11,.1)">' +
-        '<div>' +
-          '<span style="font-size:12px;color:#fff">' + (r['Investidor'] || '') + '</span>' +
-          '<span style="font-size:10px;color:var(--ts);margin-left:8px">&rarr; ' + (r['A Receber'] || '') + '</span>' +
-        '</div>' +
-        '<span style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;color:var(--ye)">' + finFmt(finNum(r['Valor Convertido em Equity'] || r['Valor'] || '')) + '</span>' +
-        '</div>';
-    });
-  }
-  document.getElementById('fin-antecip-lista').innerHTML = antHtml;
-
-  // Timestamp
-  var ts = document.getElementById('fin-update-ts');
-  if (ts) ts.textContent = 'Atualizado em ' + new Date().toLocaleString('pt-BR');
-
-  document.getElementById('fin-loading').style.display = 'none';
-  document.getElementById('fin-dashboard').style.display = 'block';
-}
-
-function finDateVal(s) {
-  if (!s) return 0;
-  var m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (m) return parseInt(m[3]+m[2]+m[1]);
-  return 0;
-}
-
-function finDrawPie(canvasId, vals, labels, cores) {
-  var canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  var ctx = canvas.getContext('2d');
-  var total = vals.reduce(function(a,b){ return a+b; }, 0);
-  if (total <= 0) return;
-  var cx = 70, cy = 70, r = 60, hole = 30;
-  var start = -Math.PI / 2;
-  ctx.clearRect(0, 0, 140, 140);
-  vals.forEach(function(v, i) {
-    var slice = (v / total) * 2 * Math.PI;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, r, start, start + slice);
-    ctx.closePath();
-    ctx.fillStyle = cores[i % cores.length];
-    ctx.fill();
-    start += slice;
-  });
-  ctx.beginPath();
-  ctx.arc(cx, cy, hole, 0, 2 * Math.PI);
-  ctx.fillStyle = '#0d1e2e';
-  ctx.fill();
-}
-
-function finIniciar() { finCarregar(); }
 var elDados2 = [];
 var elFiltro2 = 'ativo';
 function elTab(filtro, el) {
@@ -5408,22 +4761,20 @@ document.addEventListener('DOMContentLoaded', function(){
 var DT_API_KEY  = 'live_14e70fe96049615c1c7760495ede62';
 var DT_API_BASE = 'https://api.api-futebol.com.br/v1';
 
-// IDs conhecidos do Paulista A2 (ordem: mais novo primeiro)
-// A chave test_ só tem acesso ao Série B (ID 14).
-// Com chave live_ esses IDs funcionam:
-// Paulista A2 2026 = buscar via /campeonatos quando disponível
-// Paulista A2 2025 = 40 (encerrado, Capivariano campeão)
-// Paulista A2 2024 = 34 (encerrado)
-var DT_CAMP_IDS_A2 = [40]; // expandir quando tiver chave live com acesso ao A2 2026
+// Paulista A2 2026 = ID 40 (confirmado), time_id Osasco = 52
+var DT_CAMP_ID  = 40;
+var DT_OSASCO_TID = 52;
 
 var dtState = {
-  campId: null, campNome: 'Paulista A2',
-  classif: null, rodadas: null,
+  campId: DT_CAMP_ID, campNome: 'Paulistao A2 2026',
+  campData: null,
+  classif: null, classifFase: null,
   proxJogo: null, adversario: null,
   jogosOsasco: [],
+  todasPartidas: null,
   artilharia: null,
   formaCache: {},
-  osascoTid: null,
+  osascoTid: DT_OSASCO_TID,
   dtCadastro: null,
   dtRecuperacao: null
 };
@@ -5431,7 +4782,6 @@ var dtState = {
 // ── Navegação ──
 function abrirDepTecnico(e) {
   if(e) e.preventDefault();
-  _finAutenticado = false;
   document.getElementById('tela-hub').style.display = 'none';
   document.getElementById('mod-elenco').style.display = 'none';
   hidePerformance();
@@ -5447,7 +4797,6 @@ function abrirDepTecnico(e) {
   dtCarregar();
 }
 function hubVoltarDT() {
-  _finAutenticado = false;
   document.getElementById('mod-dep-tecnico').style.display = 'none';
   document.getElementById('tela-hub').style.display = 'flex';
   window.scrollTo(0, 0);
@@ -5598,87 +4947,138 @@ async function dtCarregar() {
   if(syncEl) syncEl.textContent = 'Carregando...';
   dash.innerHTML = '<div style="color:var(--ts);font-size:13px;padding:60px 0;text-align:center">' +
     '<div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--az);margin-bottom:8px">Conectando...</div>' +
-    '<div>Buscando dados do campeonato</div></div>';
+    '<div>Buscando dados do Paulistao A2 2026</div></div>';
   try {
-    // 1. Descobrir campeonato ativo (apenas na primeira carga)
-    if(!dtState.campId) {
-      var camps = await dtFetch('/campeonatos');
-      if(camps && Array.isArray(camps)) {
-        // Preferir Paulista A2 ativo
-        var match = camps.find(function(c){
-          var n = (c.nome||c.nome_popular||'').toLowerCase();
-          return n.indexOf('paulista')>=0 && n.indexOf('a2')>=0 && c.status==='andamento';
-        }) || camps.find(function(c){
-          var n = (c.nome||c.nome_popular||'').toLowerCase();
-          return n.indexOf('paulista')>=0 && n.indexOf('a2')>=0;
-        });
-        if(match) {
-          dtState.campId   = match.campeonato_id||match.id;
-          dtState.campNome = match.nome||match.nome_popular||'Paulista A2';
-        }
-      }
-      // Se a chave não tem acesso ao A2, usa ID 40 (A2 2025 - encerrado mas mostra dados)
-      if(!dtState.campId) dtState.campId = 40;
+    var cid = DT_CAMP_ID;
+    // 1. Dados do campeonato (meta + fase atual)
+    var campData = await dtFetch('/campeonatos/'+cid);
+    if(campData) {
+      dtState.campData = campData;
+      dtState.campNome = (campData.edicao_atual&&campData.edicao_atual.nome_popular)||campData.nome||'Paulistao A2 2026';
       var cn = document.getElementById('dt-camp-nome');
       if(cn) cn.textContent = dtState.campNome;
     }
-    var cid = dtState.campId;
-    // 2. Carregar dados sequencialmente (evitar rate limit 429)
+    await dtDelay(300);
+    // 2. Tabela geral (classificacao completa)
     var tabelaRaw = await dtFetch('/campeonatos/'+cid+'/tabela');
-    dtState.classif = dtNormClassif(tabelaRaw);
+    dtState.classif = Array.isArray(tabelaRaw) ? tabelaRaw : null;
     await dtDelay(300);
-    var fazes = await dtFetch('/campeonatos/'+cid+'/fases');
+    // 3. Tabela da fase ativa (segunda fase = 936)
+    var faseAtual = campData&&campData.fase_atual;
+    var faseId = faseAtual&&faseAtual.fase_id;
+    if(faseId) {
+      var tabelaFase = await dtFetch('/campeonatos/'+cid+'/tabela?fase='+faseId);
+      dtState.classifFase = Array.isArray(tabelaFase) ? tabelaFase : null;
+      await dtDelay(300);
+    }
+    // 4. Todas as partidas (estrutura por fase/rodada)
+    var partidasData = await dtFetch('/campeonatos/'+cid+'/partidas');
+    dtState.todasPartidas = partidasData;
     await dtDelay(300);
+    // 5. Artilharia
     dtState.artilharia = await dtFetch('/campeonatos/'+cid+'/artilharia');
     await dtDelay(300);
-    // 3. Rodadas
-    var rodadas = null;
-    if(fazes && Array.isArray(fazes) && fazes.length>0) {
-      var faseAtiva = fazes.find(function(f){ return f.status==='andamento'; })||fazes[fazes.length-1];
-      if(faseAtiva) {
-        var fd = await dtFetch('/campeonatos/'+cid+'/fases/'+(faseAtiva.fase_id||faseAtiva.id));
-        if(fd && fd.rodadas) rodadas=fd.rodadas;
-        else if(Array.isArray(fd)) rodadas=fd;
-      }
-    }
-    if(!rodadas) { await dtDelay(300); rodadas = await dtFetch('/campeonatos/'+cid+'/rodadas'); }
-    dtState.rodadas = rodadas;
-    // 4. Jogos do Osasco
+    // 6. Flatten e filtrar partidas do Osasco
     dtState.proxJogo=null; dtState.adversario=null; dtState.jogosOsasco=[];
     var hoje = new Date();
-    if(rodadas && Array.isArray(rodadas)) {
-      rodadas.forEach(function(rod){
-        var partidas = rod.partidas||rod.jogos||[];
-        partidas.forEach(function(p){
-          var mand = p.time_mandante||p.mandante||{};
-          var visit= p.time_visitante||p.visitante||{};
-          var mN = (mand.nome_popular||mand.nome||'').toLowerCase();
-          var vN = (visit.nome_popular||visit.nome||'').toLowerCase();
-          var isOs = mN.indexOf('osasco')>=0||vN.indexOf('osasco')>=0||mN.indexOf('oeste')>=0||vN.indexOf('oeste')>=0;
-          if(!isOs) return;
-          if(!dtState.osascoTid) dtState.osascoTid = mN.indexOf('osasco')>=0||(mN.indexOf('oeste')>=0) ? (mand.time_id||mand.id) : (visit.time_id||visit.id);
-          var dStr = p.data_realizacao||p.data_hora||p.data||'';
-          var dt   = dStr ? new Date(dStr.replace(' ','T')) : null;
-          var jogado = p.placar_mandante!==null && p.placar_mandante!==undefined && p.placar_mandante!=='';
-          var emCasa = mN.indexOf('osasco')>=0||mN.indexOf('oeste')>=0;
-          var adv    = emCasa ? visit : mand;
-          dtState.jogosOsasco.push({dt:dt,partida:p,rodada:rod.nome||('Rd '+(rod.rodada||'')),adversario:adv,jogado:jogado,emCasa:emCasa});
-          if(dt&&dt>=hoje&&!jogado&&(!dtState.proxJogo||dt<dtState.proxJogo.dt)){
-            dtState.proxJogo={dt:dt,partida:p,rodada:rod.nome||''};
-            dtState.adversario=adv;
-          }
-        });
-      });
+    function flatP(obj) {
+      var all=[];
+      if(Array.isArray(obj)) return obj;
+      if(obj&&typeof obj==='object') { Object.keys(obj).forEach(function(k){ all=all.concat(flatP(obj[k])); }); }
+      return all;
     }
-    dtState.jogosOsasco.sort(function(a,b){ return (a.dt||0)-(b.dt||0); });
+    var todas = flatP(partidasData&&partidasData.partidas ? partidasData.partidas : (partidasData||{}));
+    todas.forEach(function(p){
+      var mand = p.time_mandante||{};
+      var visit = p.time_visitante||{};
+      var mN = (mand.nome_popular||mand.nome||'').toLowerCase();
+      var vN = (visit.nome_popular||visit.nome||'').toLowerCase();
+      var isOs = mN.indexOf('osasco')>=0||vN.indexOf('osasco')>=0;
+      if(!isOs) return;
+      var dStr = p.data_realizacao||p.data||'';
+      var dt = null;
+      if(dStr) {
+        // formato dd/mm/yyyy
+        var pts = dStr.split('/');
+        if(pts.length===3) {
+          var hr = p.hora_realizacao||'12:00';
+          dt = new Date(pts[2]+'-'+pts[1]+'-'+pts[0]+'T'+hr+':00');
+        } else {
+          dt = new Date(dStr.replace(' ','T'));
+        }
+      }
+      var jogado = p.status==='finalizado';
+      var emCasa = mN.indexOf('osasco')>=0;
+      var adv = emCasa ? visit : mand;
+      var faseN = (p.fase&&p.fase.nome)||'';
+      var rodN = (p.rodada&&p.rodada.nome)||'';
+      var placarStr = p.placar||'';
+      // Extrai placar do campo placar string "Time A X x X Time B"
+      var gOs=null, gAdv=null;
+      if(jogado && placarStr) {
+        var pm = placarStr.match(/(\d+)\s*x\s*(\d+)/i);
+        if(pm) {
+          if(emCasa) { gOs=parseInt(pm[1]); gAdv=parseInt(pm[2]); }
+          else { gAdv=parseInt(pm[1]); gOs=parseInt(pm[2]); }
+        }
+      }
+      dtState.jogosOsasco.push({
+        dt:dt, partida:p, fase:faseN, rodada:rodN,
+        adversario:adv, jogado:jogado, emCasa:emCasa,
+        gOs:gOs, gAdv:gAdv
+      });
+      if(dt&&dt>=hoje&&!jogado&&(!dtState.proxJogo||dt<dtState.proxJogo.dt)){
+        dtState.proxJogo={dt:dt,partida:p,rodada:rodN,fase:faseN};
+        dtState.adversario=adv;
+      }
+    });
+    dtState.jogosOsasco.sort(function(a,b){
+      var da=a.dt?a.dt.getTime():0, db=b.dt?b.dt.getTime():0;
+      return da-db;
+    });
     if(syncEl) syncEl.textContent = 'Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     dtRenderDashboard();
     dtCarregarPlantel();
-    // dtEnriquecerAsync desativado para evitar rate limit (muitas requisicoes por time)
+    // Busca placares reais das 15 partidas do Osasco em background
+    dtBuscarPlacaresOsasco();
   } catch(e) {
     console.error('[DT]', e);
     if(syncEl) syncEl.textContent = 'Erro: '+e.message;
-    dash.innerHTML = '<div style="color:var(--re);padding:40px">Erro: '+e.message+'</div>';
+    dash.innerHTML = '<div style="color:var(--re);padding:40px">Erro ao carregar: '+e.message+'</div>';
+  }
+}
+
+// Busca placares reais das partidas do Osasco (endpoint /partidas/{id})
+async function dtBuscarPlacaresOsasco() {
+  var jogados = dtState.jogosOsasco.filter(function(j){ return j.jogado; });
+  for(var i=0; i<jogados.length; i++) {
+    var jg = jogados[i];
+    await dtDelay(300);
+    var detail = await dtFetch('/partidas/'+jg.partida.partida_id);
+    if(!detail || !detail.placar) continue;
+    var pm = detail.placar.match(/(\d+)\s*x\s*(\d+)/i);
+    if(pm) {
+      if(jg.emCasa) { jg.gOs=parseInt(pm[1]); jg.gAdv=parseInt(pm[2]); }
+      else { jg.gAdv=parseInt(pm[1]); jg.gOs=parseInt(pm[2]); }
+      // Guarda estadio real
+      if(detail.estadio) jg.estadio = detail.estadio;
+    }
+    if(detail.rodada) jg.rodada = detail.rodada.nome||jg.rodada;
+    if(detail.fase) jg.fase = detail.fase.nome||jg.fase;
+  }
+  // Recalcula stats e re-renderiza apenas os blocos afetados
+  var campanha = document.getElementById('dt-campanha-grid');
+  var cal = document.getElementById('dt-calendario-list');
+  if(campanha || cal) {
+    // Re-render blocos de desempenho e situacao inline
+    var stats = dtOsascoStats();
+    var posObj = dtOsascoPosicao();
+    if(campanha && stats) {
+      campanha.innerHTML = dtCampanhaGridHtml(stats, posObj);
+    }
+    if(cal) {
+      cal.innerHTML = dtCalendarioListHtml();
+    }
   }
 }
 
@@ -5689,34 +5089,36 @@ function dtNormClassif(raw) {
   return k.length>0 && Array.isArray(raw[k[0]]) ? raw[k[0]] : null;
 }
 
-// ── Enriquecimento async (forma dos times) ──
+// ── Enriquecimento async (forma dos adversarios) ──
 async function dtEnriquecerAsync() {
-  var times={};
-  if(dtState.classif) dtState.classif.forEach(function(t){
-    var o=t.time||t; var tid=o.time_id||o.id;
-    if(tid&&!times[tid]) times[tid]=o;
-  });
-  var tids=Object.keys(times);
-  for(var i=0;i<tids.length;i+=4){
-    var lote=tids.slice(i,i+4);
-    await Promise.all(lote.map(async function(tid){
-      if(dtState.formaCache[tid]) return;
-      var jgs=await dtFetch('/times/'+tid+'/partidas');
-      if(!jgs||!Array.isArray(jgs)) return;
-      var jogados=jgs.filter(function(j){ return j.placar_mandante!==null&&j.placar_mandante!==undefined&&j.placar_mandante!==''; });
-      dtState.formaCache[tid]=jogados.slice(-5).map(function(j){
-        var m=j.time_mandante||j.mandante||{};
-        var v=j.time_visitante||j.visitante||{};
-        var isM=(m.time_id||m.id)==tid;
-        var gN=isM?(j.placar_mandante||0):(j.placar_visitante||0);
-        var gO=isM?(j.placar_visitante||0):(j.placar_mandante||0);
-        return {gN:gN,gO:gO,v:gN>gO,e:gN===gO,op:isM?(v.nome_popular||v.nome||'?'):(m.nome_popular||m.nome||'?')};
-      });
-      document.querySelectorAll('.dt-forma-'+tid).forEach(function(el){ el.innerHTML=dtFormaHtml(tid); });
-      var advTid=dtState.adversario&&(dtState.adversario.time_id||dtState.adversario.id);
-      if(advTid==tid){ var af=document.getElementById('dt-adv-forma'); if(af) af.innerHTML=dtAdvForma(); }
-    }));
+  // Busca forma de cada time da classificacao usando os dados ja carregados
+  if(!dtState.classif) return;
+  function flatP(obj) {
+    var all=[];
+    if(Array.isArray(obj)) return obj;
+    if(obj&&typeof obj==='object') { Object.keys(obj).forEach(function(k){ all=all.concat(flatP(obj[k])); }); }
+    return all;
   }
+  var todas = flatP(dtState.todasPartidas&&dtState.todasPartidas.partidas ? dtState.todasPartidas.partidas : {});
+  dtState.classif.forEach(function(t){
+    var o=t.time||t; var tid=o.time_id||o.id;
+    if(!tid||dtState.formaCache[tid]) return;
+    var jogados = todas.filter(function(p){
+      return p.status==='finalizado'&&((p.time_mandante&&p.time_mandante.time_id===tid)||(p.time_visitante&&p.time_visitante.time_id===tid));
+    });
+    if(jogados.length===0) return;
+    dtState.formaCache[tid] = jogados.slice(-5).map(function(j){
+      var m=j.time_mandante||{}; var v=j.time_visitante||{};
+      var isM=m.time_id===tid;
+      var pm = (j.placar||'').match(/(\d+)\s*x\s*(\d+)/i);
+      var gN=0, gO=0;
+      if(pm) { gN=parseInt(isM?pm[1]:pm[2])||0; gO=parseInt(isM?pm[2]:pm[1])||0; }
+      return {gN:gN,gO:gO,v:gN>gO,e:gN===gO,op:isM?(v.nome_popular||v.nome||'?'):(m.nome_popular||m.nome||'?')};
+    });
+    document.querySelectorAll('.dt-forma-'+tid).forEach(function(el){ el.innerHTML=dtFormaHtml(tid); });
+    var advTid=dtState.adversario&&(dtState.adversario.time_id||dtState.adversario.id);
+    if(advTid===tid){ var af=document.getElementById('dt-adv-forma'); if(af) af.innerHTML=dtAdvForma(); }
+  });
 }
 
 function dtFormaHtml(tid) {
@@ -5760,10 +5162,9 @@ function dtOsascoStats() {
   if(jgs.length===0) return null;
   var v=0,e=0,d=0,gm=0,gs=0,cv=0,cf=0,cvv=0,cff=0;
   jgs.forEach(function(jg){
-    var p=jg.partida;
-    var gO=jg.emCasa?(p.placar_mandante||0):(p.placar_visitante||0);
-    var gA=jg.emCasa?(p.placar_visitante||0):(p.placar_mandante||0);
-    gm+=parseInt(gO)||0; gs+=parseInt(gA)||0;
+    var gO=jg.gOs!==null&&jg.gOs!==undefined ? jg.gOs : 0;
+    var gA=jg.gAdv!==null&&jg.gAdv!==undefined ? jg.gAdv : 0;
+    gm+=gO; gs+=gA;
     if(gO>gA){v++; if(jg.emCasa)cvv++;else cff++;}
     else if(gO===gA) e++;
     else d++;
@@ -5788,7 +5189,74 @@ function dtOsascoPosicao() {
 // ══════════════════════════════════════
 function dtRenderDashboard() {
   var dash=document.getElementById('dt-dashboard');
-  dash.innerHTML = dtBlocoAoVivo()+dtBlocoProxJogo()+dtBlocoPlantel()+dtBlocoDesempenho()+dtBlocoClassificacao();
+  dash.innerHTML = dtBlocoSituacao()+dtBlocoAoVivo()+dtBlocoProxJogo()+dtBlocoPlantel()+dtBlocoDesempenho()+dtBlocoClassificacao();
+  // Enriquece forma dos times usando dados ja carregados (sem chamadas extras)
+  setTimeout(function(){ dtEnriquecerAsync(); }, 100);
+}
+
+// ── Bloco 0: Situacao Atual no Campeonato ──
+function dtBlocoSituacao() {
+  var cd = dtState.campData;
+  var faseAtual = cd&&cd.fase_atual ? cd.fase_atual : null;
+  var faseNome = faseAtual ? faseAtual.nome : 'Segunda Fase';
+  var posObj = dtOsascoPosicao();
+  var stats = dtOsascoStats();
+  var classif = dtState.classif||dtState.classifFase||[];
+  // Verifica faixa do Osasco
+  var faixaOs = null;
+  classif.forEach(function(t){
+    var n=(t.time&&t.time.nome_popular||'').toLowerCase();
+    if(n.indexOf('osasco')>=0) faixaOs=t.faixa_classificacao;
+  });
+  var situacaoTxt, situacaoCor;
+  if(faixaOs==='classificados') { situacaoTxt='CLASSIFICADO'; situacaoCor='var(--gr)'; }
+  else if(faixaOs==='rebaixados') { situacaoTxt='REBAIXADO'; situacaoCor='var(--re)'; }
+  else if(posObj&&posObj.pos<=8) { situacaoTxt='NA ZONA DE CLASSIFICACAO'; situacaoCor='var(--ye)'; }
+  else { situacaoTxt='FORA DA CLASSIFICACAO'; situacaoCor='var(--re)'; }
+  var ultimos = [];
+  if(posObj&&posObj.dados&&posObj.dados.ultimos_jogos) ultimos=posObj.dados.ultimos_jogos;
+  var escudoOs = 'https://cdn.api-futebol.com.br/times/escudos/677fb9fe5de09.png';
+  var s='<div style="background:linear-gradient(135deg,rgba(70,162,247,.07),rgba(7,14,20,.0));border-bottom:1px solid rgba(70,162,247,.1);padding:24px;margin-bottom:0">';
+  s+='<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">';
+  s+='<img src="'+escudoOs+'" style="width:60px;height:60px;object-fit:contain;flex-shrink:0">';
+  s+='<div style="flex:1;min-width:200px">';
+  s+='<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--ts);margin-bottom:2px">PAULISTAO A2 2026 &mdash; '+faseNome.toUpperCase()+'</div>';
+  s+='<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(22px,3.5vw,36px);color:var(--wh);letter-spacing:1px;line-height:1">Osasco Sporting</div>';
+  s+='<div style="display:flex;align-items:center;gap:8px;margin-top:6px">';
+  s+='<span style="font-size:11px;font-weight:700;color:'+situacaoCor+';letter-spacing:1px">'+situacaoTxt+'</span>';
+  if(posObj) s+='<span style="font-size:11px;color:var(--ts)">&middot; '+posObj.pos+'o lugar</span>';
+  s+='</div>';
+  s+='</div>';
+  // KPIs rápidos
+  if(stats) {
+    s+='<div style="display:flex;gap:16px;flex-wrap:wrap">';
+    [
+      ['Pts', posObj&&posObj.dados?(posObj.dados.pontos||0):0, 'var(--az)'],
+      ['Aprov.', stats.ap+'%', stats.ap>=50?'var(--gr)':'var(--ye)'],
+      ['V-E-D', stats.v+'-'+stats.e+'-'+stats.d, 'var(--wh)'],
+      ['Gols', stats.gm+':'+stats.gs, 'var(--ts)']
+    ].forEach(function(k){
+      s+='<div style="text-align:center;min-width:56px">';
+      s+='<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(22px,3vw,30px);color:'+k[2]+';line-height:1">'+k[1]+'</div>';
+      s+='<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ts);margin-top:2px">'+k[0]+'</div>';
+      s+='</div>';
+    });
+    s+='</div>';
+  }
+  s+='</div>';
+  // Ultimos 5
+  if(ultimos.length>0) {
+    s+='<div style="display:flex;align-items:center;gap:8px;margin-top:14px">';
+    s+='<span style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">ULTIMOS 5</span>';
+    ultimos.forEach(function(r){
+      var cor=r==='v'?'var(--gr)':r==='e'?'var(--ye)':'var(--re)';
+      var l=r==='v'?'V':r==='e'?'E':'D';
+      s+='<span style="width:24px;height:24px;border-radius:50%;background:'+cor+'20;border:1px solid '+cor+'60;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:'+cor+'">'+l+'</span>';
+    });
+    s+='</div>';
+  }
+  s+='</div>';
+  return s;
 }
 
 function dtBlocoAoVivo() {
@@ -5800,10 +5268,30 @@ function dtBlocoProxJogo() {
     '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">ANALISE TATICA</div>' +
     '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Radar do Proximo Adversario</div>';
   if(!dtState.proxJogo) {
-    s+='<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:24px">' +
-      '<div style="font-size:13px;color:var(--ts)">Nenhum jogo futuro encontrado.</div>' +
-      '<div style="font-size:11px;color:var(--ts);margin-top:8px">Motivo: a chave API atual (test_) so tem acesso ao Campeonato Brasileiro Serie B. Para ver dados do Paulista A2 2026 e necessario uma chave live_ com acesso a esse campeonato.</div>' +
-    '</div>';
+    // Mostra o ultimo jogo jogado como referencia
+    var ultimo = dtState.jogosOsasco.filter(function(j){ return j.jogado; }).slice(-1)[0];
+    s+='<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:24px;margin-bottom:12px">';
+    s+='<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ye);margin-bottom:8px">AGUARDANDO PROXIMA PARTIDA</div>';
+    s+='<div style="font-size:13px;color:var(--wh);margin-bottom:6px">Nenhuma partida agendada encontrada nos dados da API.</div>';
+    s+='<div style="font-size:11px;color:var(--ts)">Isso pode indicar que as partidas da fase atual ainda nao foram cadastradas na base de dados, ou que o clube esta em intervalo entre fases. Verifique a tabela da competicao para acompanhar a situacao.</div>';
+    if(ultimo) {
+      var adv=ultimo.adversario||{};
+      var advE=adv.escudo||'';
+      var advN=adv.nome_popular||adv.nome||'--';
+      var cor=ultimo.gOs>ultimo.gAdv?'var(--gr)':ultimo.gOs===ultimo.gAdv?'var(--ye)':'var(--re)';
+      var letra=ultimo.gOs>ultimo.gAdv?'V':ultimo.gOs===ultimo.gAdv?'E':'D';
+      s+='<div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(70,162,247,.08)">';
+      s+='<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:10px">ULTIMO JOGO</div>';
+      s+='<div style="display:flex;align-items:center;gap:12px">';
+      if(advE) s+='<img src="'+advE+'" style="width:36px;height:36px;object-fit:contain">';
+      s+='<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--wh)">'+advN+'</div>';
+      s+='<div style="font-size:10px;color:var(--ts)">'+(ultimo.emCasa?'Casa':'Fora')+' &middot; '+ultimo.fase+'</div></div>';
+      s+='<div style="text-align:right">';
+      s+='<div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--wh);line-height:1">'+ultimo.gOs+' x '+ultimo.gAdv+'</div>';
+      s+='<span style="background:'+cor+'20;color:'+cor+';border:1px solid '+cor+'40;font-size:9px;font-weight:700;padding:2px 8px;border-radius:2px">'+letra+'</span>';
+      s+='</div></div></div>';
+    }
+    s+='</div>';
     return s+'</div>';
   }
   var p=dtState.proxJogo.partida;
@@ -5818,11 +5306,14 @@ function dtBlocoProxJogo() {
   var dias=diasN===0?'HOJE':diasN===1?'AMANHA':diasN+'d';
   var mand=p.time_mandante||p.mandante||{};
   var mNome=(mand.nome_popular||mand.nome||'').toLowerCase();
-  var emCasa=mNome.indexOf('osasco')>=0||mNome.indexOf('oeste')>=0;
-  var estadio=p.estadio||'--';
+  var emCasa=mNome.indexOf('osasco')>=0;
+  var estadioObj=p.estadio||{};
+  var estadioNome=typeof estadioObj==='string'?estadioObj:(estadioObj.nome_popular||estadioObj.nome||'--');
+  var estadioCidade=estadioObj.cidade||estadioObj.municipio||'';
   var posAdv=null;
-  if(dtState.classif && advNome!=='Adversario'){
-    dtState.classif.forEach(function(t,i){
+  var tabelaRef = dtState.classif||[];
+  if(tabelaRef && advNome!=='Adversario'){
+    tabelaRef.forEach(function(t,i){
       var o=t.time||t;
       var n=(o.nome_popular||o.nome||'').toLowerCase();
       if(n.indexOf(advNome.toLowerCase().split(' ')[0])>=0&&!posAdv) posAdv={pos:i+1,d:t};
@@ -5830,7 +5321,7 @@ function dtBlocoProxJogo() {
   }
   s+='<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-bottom:12px">' +
     '<div style="background:linear-gradient(135deg,rgba(70,162,247,.1),var(--c2));border:1px solid rgba(70,162,247,.25);border-radius:8px;padding:24px">' +
-      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az);margin-bottom:14px">'+(dtState.proxJogo.rodada||'PROXIMO JOGO')+'</div>' +
+      '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az);margin-bottom:14px">'+(dtState.proxJogo.fase||dtState.proxJogo.rodada||'PROXIMO JOGO')+'</div>' +
       '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">' +
         (advEscudo?'<img src="'+advEscudo+'" style="width:72px;height:72px;object-fit:contain;flex-shrink:0">':'<div style="width:72px;height:72px;border-radius:50%;background:rgba(70,162,247,.1);border:2px solid rgba(70,162,247,.2);flex-shrink:0"></div>') +
         '<div>' +
@@ -5843,7 +5334,7 @@ function dtBlocoProxJogo() {
         '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;color:var(--ts)">Hora</div><div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:var(--az);line-height:1;margin-top:2px">'+hrFmt+'</div></div>' +
         '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;color:var(--ts)">Contagem</div><div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:'+(diasN<=3?'var(--re)':diasN<=7?'var(--ye)':'var(--wh)')+';line-height:1;margin-top:2px">'+dias+'</div></div>' +
         '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px;grid-column:span 2"><div style="font-size:9px;text-transform:uppercase;color:var(--ts)">Mando</div><div style="font-size:13px;font-weight:700;color:'+(emCasa?'var(--gr)':'var(--ye)')+';margin-top:3px">'+(emCasa?'Casa':'Fora')+'</div></div>' +
-        '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;color:var(--ts)">Estadio</div><div style="font-size:11px;font-weight:600;color:var(--wh);margin-top:2px">'+estadio+'</div></div>' +
+        '<div style="background:rgba(0,0,0,.2);border-radius:4px;padding:10px"><div style="font-size:9px;text-transform:uppercase;color:var(--ts)">Estadio</div><div style="font-size:10px;font-weight:600;color:var(--wh);margin-top:2px">'+estadioNome+(estadioCidade?' &middot; '+estadioCidade:'')+'</div></div>' +
       '</div>' +
     '</div>' +
     '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:8px;padding:20px">' +
@@ -5870,23 +5361,27 @@ function dtBlocoPlantel() {
   '</div>';
 }
 
-function dtBlocoDesempenho() {
-  var s='<div style="margin-bottom:36px">' +
-    '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">TEMPORADA</div>' +
-    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Osasco Sporting &mdash; Campanha</div>';
-  var stats=dtOsascoStats();
-  var posObj=dtOsascoPosicao();
-  if(stats) {
-    s+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;margin-bottom:16px">';
-    [['Posicao',posObj?posObj.pos+'o':'--','var(--az)'],['Aproveita.',stats.ap+'%',stats.ap>=60?'var(--gr)':stats.ap>=40?'var(--ye)':'var(--re)'],['Jogos',stats.j,'var(--wh)'],['V',stats.v,'var(--gr)'],['E',stats.e,'var(--ye)'],['D',stats.d,'var(--re)'],['GM',stats.gm,'var(--wh)'],['GS',stats.gs,'var(--ts)'],['Saldo',(stats.gm-stats.gs>0?'+':'')+(stats.gm-stats.gs),stats.gm>stats.gs?'var(--gr)':stats.gm<stats.gs?'var(--re)':'var(--ts)'],['Casa V',Math.round(stats.cv>0?stats.cvv/stats.cv*100:0)+'%','var(--az)'],['Fora V',Math.round(stats.cf>0?stats.cff/stats.cf*100:0)+'%','var(--az)']].forEach(function(k){
-      s+='<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:5px;padding:12px;text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:'+k[2]+';line-height:1">'+k[1]+'</div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-top:3px">'+k[0]+'</div></div>';
-    });
-    s+='</div>';
-  }
-  s+='<div style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:20px">' +
-    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:12px">Calendario Completo</div>' +
-    '<div style="display:flex;flex-direction:column;gap:5px">';
-  var hoje=new Date();
+function dtCampanhaGridHtml(stats, posObj) {
+  if(!stats) return '';
+  var s='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;margin-bottom:16px" id="dt-campanha-grid">';
+  [
+    ['Posicao',posObj?posObj.pos+'o':'--','var(--az)'],
+    ['Aproveita.',stats.ap+'%',stats.ap>=60?'var(--gr)':stats.ap>=40?'var(--ye)':'var(--re)'],
+    ['Jogos',stats.j,'var(--wh)'],['V',stats.v,'var(--gr)'],['E',stats.e,'var(--ye)'],['D',stats.d,'var(--re)'],
+    ['Gols Marcados',stats.gm,'var(--wh)'],['Gols Sofridos',stats.gs,'var(--ts)'],
+    ['Saldo',(stats.gm-stats.gs>0?'+':'')+(stats.gm-stats.gs),stats.gm>stats.gs?'var(--gr)':stats.gm<stats.gs?'var(--re)':'var(--ts)'],
+    ['Casa',stats.cv+'j','var(--az)'],['Fora',stats.cf+'j','var(--az)']
+  ].forEach(function(k){
+    s+='<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:5px;padding:12px;text-align:center">' +
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:26px;color:'+k[2]+';line-height:1">'+k[1]+'</div>' +
+      '<div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ts);margin-top:3px">'+k[0]+'</div></div>';
+  });
+  return s+'</div>';
+}
+
+function dtCalendarioListHtml() {
+  var s='<div style="display:flex;flex-direction:column;gap:5px" id="dt-calendario-list">';
+  var fasesVistas={};
   (dtState.jogosOsasco||[]).forEach(function(jg){
     var p=jg.partida;
     var adv=jg.adversario||{};
@@ -5895,69 +5390,121 @@ function dtBlocoDesempenho() {
     var isP=dtState.proxJogo&&dtState.proxJogo.partida===p;
     var dStr=jg.dt?jg.dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'--';
     var hStr=jg.dt?jg.dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+    var faseKey=jg.fase||'';
+    if(faseKey&&!fasesVistas[faseKey]) {
+      fasesVistas[faseKey]=true;
+      s+='<div style="padding:6px 0 3px;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--az);margin-top:4px">'+faseKey+'</div>';
+    }
     var resH='';
-    if(jg.jogado){
-      var gO=jg.emCasa?(p.placar_mandante||0):(p.placar_visitante||0);
-      var gA=jg.emCasa?(p.placar_visitante||0):(p.placar_mandante||0);
+    if(jg.jogado && jg.gOs!==null && jg.gOs!==undefined){
+      var gO=jg.gOs, gA=jg.gAdv;
       var cor2=gO>gA?'var(--gr)':gO===gA?'var(--ye)':'var(--re)';
       var letra=gO>gA?'V':gO===gA?'E':'D';
-      resH='<div style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><span style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--wh)">'+gO+' x '+gA+'</span><span style="background:'+cor2+'20;color:'+cor2+';border:1px solid '+cor2+'40;font-size:9px;font-weight:700;padding:2px 6px;border-radius:2px">'+letra+'</span></div>';
+      resH='<div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">' +
+        '<span style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--wh)">'+gO+' x '+gA+'</span>' +
+        '<span style="background:'+cor2+'20;color:'+cor2+';border:1px solid '+cor2+'40;font-size:9px;font-weight:700;padding:2px 6px;border-radius:2px">'+letra+'</span></div>';
+    } else if(jg.jogado) {
+      resH='<div style="font-size:11px;color:var(--ts);text-align:right"><span class="spin">&#8635;</span></div>';
     } else {
       resH='<div style="font-size:11px;color:var(--ts);text-align:right">'+hStr+'</div>';
     }
-    s+='<div style="display:grid;grid-template-columns:44px auto 1fr auto;align-items:center;gap:8px;padding:8px 12px;background:'+(isP?'rgba(70,162,247,.08)':jg.jogado?'rgba(0,0,0,.12)':'var(--c1)')+';border:1px solid '+(isP?'rgba(70,162,247,.35)':'rgba(70,162,247,.07)')+';border-radius:4px;'+(isP?'border-left:3px solid var(--az);':'border-left:3px solid transparent;')+'">' +
-      '<div><div style="font-size:10px;font-weight:700;color:'+(isP?'var(--az)':'var(--ts)')+'">'+dStr+'</div><div style="font-size:8px;color:rgba(122,155,181,.5)">'+(jg.rodada||'').replace('Rodada','Rd').substring(0,8)+'</div></div>' +
+    s+='<div style="display:grid;grid-template-columns:44px auto 1fr auto;align-items:center;gap:8px;padding:8px 12px;' +
+      'background:'+(isP?'rgba(70,162,247,.08)':jg.jogado?'rgba(0,0,0,.12)':'var(--c1)')+';' +
+      'border:1px solid '+(isP?'rgba(70,162,247,.35)':'rgba(70,162,247,.07)')+';border-radius:4px;' +
+      (isP?'border-left:3px solid var(--az);':'border-left:3px solid transparent;')+'">' +
+      '<div><div style="font-size:10px;font-weight:700;color:'+(isP?'var(--az)':'var(--ts)')+'">'+dStr+'</div>' +
+        '<div style="font-size:8px;color:rgba(122,155,181,.5)">'+(jg.rodada||'').replace('Rodada','Rd').substring(0,8)+'</div></div>' +
       (advE?'<img src="'+advE+'" style="width:22px;height:22px;object-fit:contain">':'<div style="width:22px;height:22px;border-radius:50%;background:rgba(70,162,247,.06);border:1px solid rgba(70,162,247,.1)"></div>') +
-      '<div><div style="font-size:12px;font-weight:'+(isP?'700':'500')+';color:'+(isP?'var(--wh)':jg.jogado?'rgba(240,244,248,.55)':'var(--wh)')+'">'+advN+'</div><div style="font-size:10px;color:var(--ts)">'+(jg.emCasa?'Casa':'Fora')+'</div></div>' +
+      '<div><div style="font-size:12px;font-weight:'+(isP?'700':'500')+';color:'+(isP?'var(--wh)':jg.jogado?'rgba(240,244,248,.55)':'var(--wh)')+'">'+advN+'</div>' +
+        '<div style="font-size:10px;color:var(--ts)">'+(jg.emCasa?'Casa':'Fora')+'</div></div>' +
       '<div>'+resH+'</div>' +
     '</div>';
   });
-  s+='</div></div>';
+  return s+'</div>';
+}
+
+function dtBlocoDesempenho() {
+  var stats=dtOsascoStats();
+  var posObj=dtOsascoPosicao();
+  var s='<div style="margin-bottom:36px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">TEMPORADA</div>' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">Osasco Sporting &mdash; Campanha</div>';
+  s+=dtCampanhaGridHtml(stats,posObj);
+  s+='<div style="background:var(--c2);border:1px solid rgba(70,162,247,.12);border-radius:6px;padding:20px">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
+    '<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Calendario Completo &mdash; '+dtState.jogosOsasco.length+' Partidas</div>' +
+    '<div style="font-size:9px;color:var(--ts)">Placares carregando...</div>' +
+    '</div>' +
+    dtCalendarioListHtml() +
+  '</div>';
   return s+'</div>';
 }
 
 function dtBlocoClassificacao() {
+  var faseAtual = dtState.campData&&dtState.campData.fase_atual;
+  var faseNome = faseAtual ? faseAtual.nome : 'Classificacao';
+  var tabela = dtState.classif||[];
   var s='<div style="margin-bottom:36px">' +
     '<div style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--az);margin-bottom:6px">COMPETICAO</div>' +
-    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">'+(dtState.campNome||'Paulista A2')+'</div>' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:clamp(28px,4vw,40px);color:var(--wh);letter-spacing:1px;margin-bottom:20px">'+(dtState.campNome||'Paulistao A2 2026')+'</div>' +
     '<div style="display:grid;grid-template-columns:1.8fr 1fr;gap:16px">';
-  if(dtState.classif && dtState.classif.length>0) {
+  if(tabela.length>0) {
     var advN2=dtState.adversario?(dtState.adversario.nome_popular||dtState.adversario.nome||''):'';
-    s+='<div><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:8px">Tabela de Classificacao</div>' +
-      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:400px">' +
+    // Legenda faixas
+    var faixas = {};
+    tabela.forEach(function(t){ if(t.faixa_classificacao) faixas[t.faixa_classificacao]=true; });
+    s+='<div>';
+    s+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+    s+='<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts)">Tabela &mdash; '+faseNome+'</div>';
+    s+='<div style="display:flex;gap:8px">';
+    if(faixas['classificados']) s+='<span style="font-size:8px;font-weight:700;color:var(--gr);letter-spacing:1px">&#9632; CLASSIF.</span>';
+    if(faixas['rebaixados']) s+='<span style="font-size:8px;font-weight:700;color:var(--re);letter-spacing:1px">&#9632; REBAIXADO</span>';
+    s+='</div></div>';
+    s+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:400px">' +
       '<thead><tr style="border-bottom:2px solid rgba(70,162,247,.15)">' +
-      ['#','Time','Forma','Pts','J','V','E','D','SG'].map(function(h){
-        return '<th style="padding:7px 8px;text-align:'+(h==='Time'||h==='Forma'?'left':'center')+';font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts)">'+h+'</th>';
+      ['#','Time','Ult.5','Pts','J','V','E','D','SG','Ap.%'].map(function(h){
+        return '<th style="padding:7px 6px;text-align:'+(h==='Time'||h==='Ult.5'?'left':'center')+';font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ts)">'+h+'</th>';
       }).join('')+'</tr></thead><tbody>';
-    dtState.classif.forEach(function(t,i){
+    tabela.forEach(function(t,i){
       var o=t.time||t;
       var nome=o.nome_popular||o.nome||'--';
       var esc=o.escudo||o.logo||'';
       var tid=o.time_id||o.id;
-      var isOs=nome.toLowerCase().indexOf('osasco')>=0||nome.toLowerCase().indexOf('oeste')>=0;
+      var isOs=nome.toLowerCase().indexOf('osasco')>=0;
       var isAdv=advN2&&nome.toLowerCase().indexOf(advN2.toLowerCase().split(' ')[0])>=0;
       var sg=t.saldo_gols||0;
-      s+='<tr style="border-bottom:1px solid rgba(70,162,247,.04);background:'+(isOs?'rgba(70,162,247,.08)':isAdv?'rgba(245,158,11,.05)':'')+';border-left:3px solid '+(isOs?'var(--az)':isAdv?'var(--ye)':'transparent')+'">' +
-        '<td style="padding:7px 8px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:14px;color:'+(isOs?'var(--az)':'var(--ts)')+'">'+(t.posicao||i+1)+'</td>' +
-        '<td style="padding:7px 10px"><div style="display:flex;align-items:center;gap:6px">'+(esc?'<img src="'+esc+'" style="width:18px;height:18px;object-fit:contain;flex-shrink:0">':'')+
+      var faixa=t.faixa_classificacao;
+      var faixaCor = faixa==='classificados'?'var(--gr)':faixa==='rebaixados'?'var(--re)':'transparent';
+      // Ultimos jogos
+      var ultH='<div style="display:flex;gap:2px">';
+      (t.ultimos_jogos||[]).forEach(function(r){
+        var cor=r==='v'?'var(--gr)':r==='e'?'var(--ye)':'var(--re)';
+        var l=r==='v'?'V':r==='e'?'E':'D';
+        ultH+='<span style="width:16px;height:16px;border-radius:50%;background:'+cor+'20;border:1px solid '+cor+'50;display:inline-flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:'+cor+'">'+l+'</span>';
+      });
+      ultH+='</div>';
+      s+='<tr style="border-bottom:1px solid rgba(70,162,247,.04);background:'+(isOs?'rgba(70,162,247,.08)':isAdv?'rgba(245,158,11,.05)':'')+';border-left:3px solid '+(isOs?'var(--az)':isAdv?'var(--ye)':faixaCor)+'">' +
+        '<td style="padding:6px 6px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:14px;color:'+(isOs?'var(--az)':'var(--ts)')+'">'+(t.posicao||i+1)+'</td>' +
+        '<td style="padding:6px 8px"><div style="display:flex;align-items:center;gap:6px">'+(esc?'<img src="'+esc+'" style="width:16px;height:16px;object-fit:contain;flex-shrink:0">':'')+
           '<span style="font-weight:'+(isOs||isAdv?'700':'400')+';color:'+(isOs?'var(--az)':isAdv?'var(--ye)':'var(--wh)')+'">'+nome+'</span>'+
-          (isOs?'<span style="font-size:7px;background:rgba(70,162,247,.2);color:var(--az);padding:1px 5px;border-radius:2px">NOS</span>':'')+
-          (isAdv?'<span style="font-size:7px;background:rgba(245,158,11,.2);color:var(--ye);padding:1px 5px;border-radius:2px">ADV</span>':'')+
+          (isOs?'<span style="font-size:7px;background:rgba(70,162,247,.2);color:var(--az);padding:1px 4px;border-radius:2px">NOS</span>':'')+
+          (isAdv?'<span style="font-size:7px;background:rgba(245,158,11,.2);color:var(--ye);padding:1px 4px;border-radius:2px">ADV</span>':'')+
         '</div></td>' +
-        '<td style="padding:7px 8px"><div class="dt-forma-'+tid+'">'+(dtState.formaCache[tid]?dtFormaHtml(tid):'<span style="color:var(--ts);font-size:10px">...</span>')+'</div></td>' +
-        '<td style="padding:7px 8px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:16px;color:var(--wh)">'+(t.pontos||0)+'</td>' +
-        '<td style="padding:7px 8px;text-align:center;color:var(--ts)">'+(t.jogos||0)+'</td>' +
-        '<td style="padding:7px 8px;text-align:center;color:var(--gr)">'+(t.vitorias||0)+'</td>' +
-        '<td style="padding:7px 8px;text-align:center;color:var(--ye)">'+(t.empates||0)+'</td>' +
-        '<td style="padding:7px 8px;text-align:center;color:var(--re)">'+(t.derrotas||0)+'</td>' +
-        '<td style="padding:7px 8px;text-align:center;color:'+(sg>0?'var(--gr)':sg<0?'var(--re)':'var(--ts)')+'">'+( sg>0?'+':'')+sg+'</td>' +
+        '<td style="padding:6px 6px">'+ultH+'</td>'+
+        '<td style="padding:6px 6px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:16px;color:var(--wh)">'+(t.pontos||0)+'</td>' +
+        '<td style="padding:6px 6px;text-align:center;color:var(--ts)">'+(t.jogos||0)+'</td>' +
+        '<td style="padding:6px 6px;text-align:center;color:var(--gr)">'+(t.vitorias||0)+'</td>' +
+        '<td style="padding:6px 6px;text-align:center;color:var(--ye)">'+(t.empates||0)+'</td>' +
+        '<td style="padding:6px 6px;text-align:center;color:var(--re)">'+(t.derrotas||0)+'</td>' +
+        '<td style="padding:6px 6px;text-align:center;color:'+(sg>0?'var(--gr)':sg<0?'var(--re)':'var(--ts)')+'">'+( sg>0?'+':'')+sg+'</td>' +
+        '<td style="padding:6px 6px;text-align:center;color:var(--ts)">'+(t.aproveitamento||0)+'%</td>' +
       '</tr>';
     });
     s+='</tbody></table></div></div>';
   } else {
-    s+='<div style="color:var(--ts);font-size:13px">Tabela nao disponivel para este campeonato com a chave atual.</div>';
+    s+='<div style="color:var(--ts);font-size:13px">Tabela nao disponivel.</div>';
   }
-  // Artilharia
+  // Artilharia / Outras partidas da fase
   s+='<div>';
   if(dtState.artilharia && Array.isArray(dtState.artilharia) && dtState.artilharia.length>0) {
     s+='<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:8px">Artilharia do Campeonato</div><div style="display:flex;flex-direction:column;gap:5px">';
@@ -5980,8 +5527,45 @@ function dtBlocoClassificacao() {
     });
     s+='</div>';
   } else {
-    s+='<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:8px">Artilharia</div>' +
-      '<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:14px;color:var(--ts);font-size:12px">Nao disponivel para este campeonato.</div>';
+    // Artilharia vazia - mostra ultimas partidas gerais do campeonato
+    s+='<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:8px">Artilharia</div>';
+    s+='<div style="background:var(--c2);border:1px solid rgba(70,162,247,.1);border-radius:6px;padding:14px;color:var(--ts);font-size:12px;margin-bottom:16px">';
+    s+='Artilharia nao disponivel na API para o Paulistao A2.';
+    s+='</div>';
+    // Ultimas partidas do campeonato (geral)
+    s+='<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);margin-bottom:8px">Ultimos Resultados &mdash; Campeonato</div>';
+    s+='<div style="display:flex;flex-direction:column;gap:5px">';
+    function flatP2(obj) {
+      var all=[];
+      if(Array.isArray(obj)) return obj;
+      if(obj&&typeof obj==='object') { Object.keys(obj).forEach(function(k){ all=all.concat(flatP2(obj[k])); }); }
+      return all;
+    }
+    var todas2 = dtState.todasPartidas&&dtState.todasPartidas.partidas ? flatP2(dtState.todasPartidas.partidas) : [];
+    var recentes = todas2.filter(function(p){ return p.status==='finalizado'; }).slice(-8);
+    recentes.reverse().forEach(function(p){
+      var mNome=p.time_mandante&&p.time_mandante.nome_popular||'--';
+      var vNome=p.time_visitante&&p.time_visitante.nome_popular||'--';
+      var mE=p.time_mandante&&p.time_mandante.escudo||'';
+      var vE=p.time_visitante&&p.time_visitante.escudo||'';
+      var pm=(p.placar||'').match(/(\d+)\s*x\s*(\d+)/i);
+      var gm=pm?pm[1]:'--', gv=pm?pm[2]:'--';
+      s+='<div style="background:rgba(0,0,0,.15);border:1px solid rgba(70,162,247,.06);border-radius:4px;padding:8px 10px">';
+      s+='<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px">';
+      s+='<div style="display:flex;align-items:center;gap:5px;justify-content:flex-end">';
+      s+='<span style="font-size:11px;text-align:right;color:var(--wh)">'+mNome+'</span>';
+      s+=(mE?'<img src="'+mE+'" style="width:18px;height:18px;object-fit:contain;flex-shrink:0">':'');
+      s+='</div>';
+      s+='<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--wh);text-align:center;white-space:nowrap">'+gm+' x '+gv+'</div>';
+      s+='<div style="display:flex;align-items:center;gap:5px">';
+      s+=(vE?'<img src="'+vE+'" style="width:18px;height:18px;object-fit:contain;flex-shrink:0">':'');
+      s+='<span style="font-size:11px;color:var(--wh)">'+vNome+'</span>';
+      s+='</div>';
+      s+='</div>';
+      if(p.data_realizacao) s+='<div style="font-size:9px;color:var(--ts);text-align:center;margin-top:3px">'+p.data_realizacao+'</div>';
+      s+='</div>';
+    });
+    s+='</div>';
   }
   s+='</div></div>';
   return s+'</div>';
