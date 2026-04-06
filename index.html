@@ -5695,18 +5695,32 @@ function dtNSPSummaryHtml() {
     }
     return '<div style="font-size:12px;color:rgba(122,155,181,.6)">Carregando dados NSP...</div>';
   }
+  // Pega o registro mais recente de cada atleta (igual ao NSP)
+  var aptMap = {};
+  rec.forEach(function(r){
+    var nome = (r['Nome'] || r['Atleta'] || '').trim();
+    if(!nome) return;
+    aptMap[nome] = r['Característica'] || r['Caracteristica'] || '';
+  });
+
   var aptos = 0, reab = 0, alerta = 0;
   var alertaPlayers = [];
-  rec.forEach(function(r){
-    var caract = (r['Característica'] || r['Caracteristica'] || '').toLowerCase().trim();
-    if(caract === 'apronto') aptos++;
+  // Total baseado em atletas cadastrados, não em linhas de recuperação
+  var atletasAtivos = (window.nspCadastro || []).filter(function(r){
+    return r['Nome'] && r['Nome'].trim().length > 2;
+  });
+  var total = atletasAtivos.length || Object.keys(aptMap).length;
+
+  Object.keys(aptMap).forEach(function(nome){
+    var caract = aptMap[nome].toLowerCase().trim();
+    if(caract === 'apronto' || caract.indexOf('apronto') >= 0) aptos++;
     else if(caract.indexOf('reabil') >= 0 || caract.indexOf('lesão') >= 0 || caract.indexOf('lesao') >= 0) reab++;
     else if(caract.indexOf('alerta') >= 0 || caract.indexOf('sobrecarga') >= 0) {
       alerta++;
-      alertaPlayers.push(r['Nome'] || r['Atleta'] || '');
+      alertaPlayers.push(nome);
     }
   });
-  var total = rec.length || cad.length;
+
   var pctAptos = total > 0 ? Math.round((aptos / total) * 100) : 0;
   var corAptos = pctAptos >= 80 ? '#2ECC8E' : pctAptos >= 60 ? '#F59E0B' : '#EF4444';
 
@@ -5902,15 +5916,19 @@ function dtTabMatch() {
 // Cruzamento NSP x Jogo: atletas em alerta / com alta carga na semana do jogo
 function dtCruzamentoNSPJogo() {
   var rec = window.nspRecuperacao || [];
-  var carga = window.nspCarga || [];
   if(rec.length === 0) return '';
 
-  var emAlerta = [], emReab = [], altaCarga = [];
-
+  // Pega último registro por atleta
+  var ultimoRec = {};
   rec.forEach(function(r){
-    var caract = (r['Característica'] || r['Caracteristica'] || '').toLowerCase();
-    var nome   = (r['Nome'] || r['Atleta'] || '').trim();
+    var nome = (r['Nome'] || r['Atleta'] || '').trim();
     if(!nome) return;
+    ultimoRec[nome] = r;
+  });
+
+  var emAlerta = [], emReab = [];
+  Object.keys(ultimoRec).forEach(function(nome){
+    var caract = (ultimoRec[nome]['Característica'] || ultimoRec[nome]['Caracteristica'] || '').toLowerCase();
     if(caract.indexOf('alerta') >= 0 || caract.indexOf('sobrecarga') >= 0) emAlerta.push(nome);
     if(caract.indexOf('reabil') >= 0 || caract.indexOf('lesão') >= 0 || caract.indexOf('lesao') >= 0) emReab.push(nome);
   });
@@ -6163,16 +6181,25 @@ function dtTabLoad() {
   // ── Distribuição de prontidão ────────────────────────────────
   s += '<div style="font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(122,155,181,.6);margin-bottom:12px">DISTRIBUIÇÃO DE PRONTIDÃO</div>';
 
-  // Agrupa por característica
-  var grupos = {};
+  // Pega último registro por atleta (nspRecuperacao é ordenado cronologicamente)
+  var ultimoRec = {};
   rec.forEach(function(r){
+    var nome = (r['Nome'] || r['Atleta'] || '').trim();
+    if(!nome) return;
+    ultimoRec[nome] = r; // sobrescreve — fica o último
+  });
+
+  // Agrupa por característica (apenas último registro de cada atleta)
+  var grupos = {};
+  Object.keys(ultimoRec).forEach(function(nome){
+    var r = ultimoRec[nome];
     var caract = (r['Característica'] || r['Caracteristica'] || 'Indefinido').trim();
     if(!caract || caract === '0' || caract === '-') caract = 'Indefinido';
     grupos[caract] = (grupos[caract] || []);
-    grupos[caract].push(r['Nome'] || r['Atleta'] || '');
+    grupos[caract].push(nome);
   });
 
-  var total = rec.length;
+  var total = Object.keys(ultimoRec).length || rec.length;
   var ordem = ['apronto', 'treinando', 'alerta', 'sobrecarga', 'lesão', 'lesao', 'reabilitação', 'reabilitacao'];
   var cores = {
     'apronto': '#2ECC8E',
