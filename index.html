@@ -757,11 +757,6 @@ footer{background:var(--bk);border-top:1px solid rgba(70,162,247,.08);padding:36
       <div class="hcard__body"><div class="hcard__label">Dep. Tecnico</div><div class="hcard__sub">Taticas &middot; Analise</div></div>
       <div class="hcard__badge badge-live">ATIVO</div>
     </div>
-    <div class="hcard active" onclick="abrirMercado(event)">
-      <div class="hcard__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
-      <div class="hcard__body"><div class="hcard__label">Mercado</div><div class="hcard__sub">Talentos &middot; Contratações</div></div>
-      <div class="hcard__badge badge-live">ATIVO</div>
-    </div>
     <div class="hcard soon">
       <div class="hcard__icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div>
       <div class="hcard__body"><div class="hcard__label">Marketing</div><div class="hcard__sub">Redes &middot; Patrocinadores</div></div>
@@ -4985,27 +4980,6 @@ document.addEventListener('DOMContentLoaded', function(){
 
 
 
-<!-- MÓDULO MERCADO -->
-<div id="mod-mercado" style="display:none;background:var(--bk);min-height:100vh">
-  <div class="el-header">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
-      <button onclick="hubVoltarMercado()" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ts);background:none;border:1px solid rgba(70,162,247,.2);border-radius:3px;padding:7px 14px;cursor:pointer">&#8592; Hub</button>
-      <div style="display:flex;align-items:center;gap:12px">
-        <span id="mkt-sync" style="font-size:10px;color:var(--ts)">Carregando...</span>
-        <button onclick="mktCarregar()" style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:3px;cursor:pointer;background:rgba(70,162,247,.1);color:var(--az);border:1px solid rgba(70,162,247,.25)">&#8635; Atualizar</button>
-      </div>
-    </div>
-    <div class="el-title">MERCADO <em style="color:var(--gr)">DE TALENTOS</em></div>
-    <div class="el-sub" style="margin-top:4px">Osasco Sporting &middot; Banco de Talentos &middot; Oportunidades de Contratação</div>
-  </div>
-  <div class="el-body" id="mkt-dashboard">
-    <div style="color:var(--ts);font-size:13px;padding:60px 0;text-align:center">
-      <div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:var(--az);margin-bottom:8px">Conectando...</div>
-      <div>Carregando banco de talentos</div>
-    </div>
-  </div>
-</div>
-
 <div id="mod-dep-tecnico" style="display:none;background:var(--bk);min-height:100vh">
   <div class="el-header">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
@@ -5574,6 +5548,7 @@ function dtShellLayout() {
     { id: 'table',     label: 'Classificação' },
     { id: 'load',      label: 'Carga NSP' },
     { id: 'scout',     label: 'Scout Adversários' },
+    { id: 'mercado',   label: 'Mercado' },
   ];
   tabs.forEach(function(t){
     s += '<button id="dt-tab-' + t.id + '" onclick="dtSwitchTab(\'' + t.id + '\')" style="font-family:\'Barlow Condensed\',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:12px 18px;border:none;background:none;cursor:pointer;color:rgba(122,155,181,.55);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:.2s">' + t.label + '</button>';
@@ -5612,6 +5587,7 @@ function dtSwitchTab(tabId) {
   else if(tabId === 'table') content.innerHTML = dtTabTable();
   else if(tabId === 'load')  content.innerHTML = dtTabLoad();
   else if(tabId === 'scout') content.innerHTML = dtTabScout();
+  else if(tabId === 'mercado') content.innerHTML = dtTabMercado();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -6823,48 +6799,28 @@ var MKT_BASE = SCOUT_SID ? 'https://docs.google.com/spreadsheets/d/' + SCOUT_SID
 var mktTalentos = [];
 var mktCarregado = false;
 
-function abrirMercado(e) {
-  if(e) e.preventDefault();
-  document.getElementById('tela-hub').style.display = 'none';
-  document.getElementById('mod-mercado').style.display = 'block';
-  window.scrollTo(0, 0);
-  mktCarregar();
-}
-
-function hubVoltarMercado() {
-  document.getElementById('mod-mercado').style.display = 'none';
-  document.getElementById('tela-hub').style.display = 'flex';
-  window.scrollTo(0, 0);
-}
-
-async function mktCarregar() {
-  var sync = document.getElementById('mkt-sync');
-  var dash = document.getElementById('mkt-dashboard');
-  if(sync) sync.textContent = 'Atualizando...';
-  if(!SCOUT_SID) {
-    mktCarregado = true;
-    mktRender();
-    if(sync) sync.textContent = 'Modo demonstração';
-    return;
-  }
+async function mktCarregarDados() {
+  if(mktCarregado || !SCOUT_SID) { return; }
   try {
     var base = 'https://docs.google.com/spreadsheets/d/' + SCOUT_SID + '/gviz/tq?tqx=out:csv&sheet=';
     var r = await fetch(base + encodeURIComponent('Banco de Talentos'));
     var t = await r.text();
     mktTalentos = nspParseSheet(t).filter(function(row){ return row['Nome'] && row['Nome'].trim(); });
     mktCarregado = true;
-    if(sync) sync.textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   } catch(e) {
-    if(sync) sync.textContent = 'Erro ao carregar';
     console.warn('[Mercado]', e.message);
   }
-  mktRender();
 }
 
-function mktRender() {
-  var dash = document.getElementById('mkt-dashboard');
-  if(!dash) return;
-  dash.innerHTML = mktDashboardHtml();
+function dtTabMercado() {
+  if(!mktCarregado && SCOUT_SID) {
+    mktCarregarDados().then(function(){
+      var content = document.getElementById('dt-tab-content');
+      if(content) content.innerHTML = dtTabMercado();
+    });
+    return '<div style="padding:40px;text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:24px;color:#46A2F7;margin-bottom:8px">CARREGANDO...</div></div>';
+  }
+  return mktDashboardHtml();
 }
 
 function mktDashboardHtml() {
