@@ -5313,19 +5313,25 @@ async function dtBuscarPlacaresOsasco() {
     if(detail.rodada) jg.rodada = detail.rodada.nome||jg.rodada;
     if(detail.fase) jg.fase = detail.fase.nome||jg.fase;
   }
-  // Recalcula stats e re-renderiza apenas os blocos afetados
-  var campanha = document.getElementById('dt-campanha-grid');
-  var cal = document.getElementById('dt-calendario-list');
-  if(campanha || cal) {
-    // Re-render blocos de desempenho e situacao inline
-    var stats = dtOsascoStats();
-    var posObj = dtOsascoPosicao();
-    if(campanha && stats) {
-      campanha.innerHTML = dtCampanhaGridHtml(stats, posObj);
+  // Recalcula stats e re-renderiza a UI de abas com placares reais
+  var content = document.getElementById('dt-tab-content');
+  var bar = document.getElementById('dt-tab-bar');
+  if(content) {
+    // Re-render hero strip com sg correto
+    var dash = document.getElementById('dt-dashboard');
+    if(dash) dash.innerHTML = dtShellLayout();
+    // Re-activate current tab
+    var activeTab = 'overview';
+    if(bar) {
+      var btns = bar.querySelectorAll('button');
+      btns.forEach(function(b){
+        if(b.style.color === 'rgb(70, 162, 247)' || b.style.borderBottomColor === 'rgb(70, 162, 247)') {
+          var id = b.id.replace('dt-tab-','');
+          if(id) activeTab = id;
+        }
+      });
     }
-    if(cal) {
-      cal.innerHTML = dtCalendarioListHtml();
-    }
+    dtSwitchTab(activeTab);
   }
 }
 
@@ -5417,7 +5423,7 @@ function dtOsascoStats() {
     else d++;
     if(jg.emCasa) cv++; else cf++;
   });
-  return {j:jgs.length,v:v,e:e,d:d,gm:gm,gs:gs,ap:Math.round((v*3+e)/(jgs.length*3)*100),cv:cv,cvv:cvv,cf:cf,cff:cff};
+  return {j:jgs.length,v:v,e:e,d:d,gm:gm,gs:gs,sg:gm-gs,ap:Math.round((v*3+e)/(jgs.length*3)*100),cv:cv,cvv:cvv,cf:cf,cff:cff};
 }
 
 function dtOsascoPosicao() {
@@ -5675,11 +5681,19 @@ function dtProxJogoCompact() {
 }
 
 function dtNSPSummaryHtml() {
-  // Cross NSP data with match schedule
   var rec = window.nspRecuperacao || [];
   var cad = window.nspCadastro || [];
   if(rec.length === 0 && cad.length === 0) {
-    return '<div style="font-size:12px;color:rgba(122,155,181,.6)">NSP não carregado. Acesse o módulo NSP primeiro.</div>';
+    // Dispara carregamento em background e atualiza depois
+    if(!window._nspCarregandoDT) {
+      window._nspCarregandoDT = true;
+      nspCarregar().then(function(){
+        window._nspCarregandoDT = false;
+        var el = document.querySelector('#dt-tab-content');
+        if(el) dtSwitchTab('overview');
+      });
+    }
+    return '<div style="font-size:12px;color:rgba(122,155,181,.6)">Carregando dados NSP...</div>';
   }
   var aptos = 0, reab = 0, alerta = 0;
   var alertaPlayers = [];
@@ -5741,9 +5755,13 @@ function dtCampanhaCompactHtml() {
     var adv = jg.adversario || {};
     var advN = adv.nome_popular || adv.nome || '--';
     var advE = adv.escudo || '';
-    var res  = jg.gOs + ' x ' + jg.gAdv;
-    var cor  = jg.gOs > jg.gAdv ? '#2ECC8E' : jg.gOs === jg.gAdv ? '#F59E0B' : '#EF4444';
-    var letra = jg.gOs > jg.gAdv ? 'V' : jg.gOs === jg.gAdv ? 'E' : 'D';
+    var res  = (jg.gOs !== null && jg.gOs !== undefined && jg.gAdv !== null && jg.gAdv !== undefined)
+               ? jg.gOs + ' x ' + jg.gAdv : '- x -';
+    var cor  = (jg.gOs !== null && jg.gOs !== undefined)
+               ? (jg.gOs > jg.gAdv ? '#2ECC8E' : jg.gOs === jg.gAdv ? '#F59E0B' : '#EF4444')
+               : 'rgba(122,155,181,.4)';
+    var letra = (jg.gOs !== null && jg.gOs !== undefined)
+               ? (jg.gOs > jg.gAdv ? 'V' : jg.gOs === jg.gAdv ? 'E' : 'D') : '-';
     s += '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:rgba(0,0,0,.15);border-radius:4px;border-left:2px solid ' + cor + '">';
     s += '<div style="width:20px;height:20px;border-radius:50%;background:' + cor + '20;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:' + cor + ';flex-shrink:0">' + letra + '</div>';
     if(advE) s += '<img src="' + advE + '" style="width:18px;height:18px;object-fit:contain;flex-shrink:0">';
@@ -5792,7 +5810,7 @@ function dtTabMatch() {
   }
 
   var adv   = dtState.adversario || {};
-  var advN  = adv.nome_popular || adv.nome || (dtState.proxJogo ? '--' : 'Último adversário');
+  var advN  = adv.nome_popular || adv.nome || '--';
   var advE  = adv.escudo || '';
   var mand  = dtState.proxJogo ? dtState.proxJogo.mandante : false;
   var rodada = dtState.proxJogo ? (dtState.proxJogo.rodada || dtState.proxJogo.fase || '') : '';
@@ -5960,8 +5978,13 @@ function dtHistoricoConfrontos(advN) {
 // TAB 3 — PLANTEL
 // ═══════════════════════════════════════════════════════════════
 function dtTabSquad() {
-  var html = '<div id="dt-plantel-content">' + dtPlantelHtml() + '</div>';
-  return html;
+  if(!window.nspCadastro || nspCadastro.length === 0) {
+    nspCarregar().then(function(){
+      var el = document.getElementById('dt-plantel-content');
+      if(el) el.innerHTML = dtPlantelHtml();
+    });
+  }
+  return '<div id="dt-plantel-content">' + dtPlantelHtml() + '</div>';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -6008,9 +6031,10 @@ function dtTabSeason() {
     if(!jg.jogado) {
       cor = '#46A2F7'; res = '--'; letra = isProx ? '>' : '-';
     } else {
-      cor = jg.gOs > jg.gAdv ? '#2ECC8E' : jg.gOs === jg.gAdv ? '#F59E0B' : '#EF4444';
-      res = jg.gOs + '-' + jg.gAdv;
-      letra = jg.gOs > jg.gAdv ? 'V' : jg.gOs === jg.gAdv ? 'E' : 'D';
+      var hasScore = jg.gOs !== null && jg.gOs !== undefined && jg.gAdv !== null && jg.gAdv !== undefined;
+      cor = hasScore ? (jg.gOs > jg.gAdv ? '#2ECC8E' : jg.gOs === jg.gAdv ? '#F59E0B' : '#EF4444') : 'rgba(122,155,181,.4)';
+      res = hasScore ? (jg.gOs + '-' + jg.gAdv) : '- -';
+      letra = hasScore ? (jg.gOs > jg.gAdv ? 'V' : jg.gOs === jg.gAdv ? 'E' : 'D') : '?';
     }
 
     var border = isProx ? '1px solid rgba(70,162,247,.4)' : '1px solid rgba(70,162,247,.06)';
@@ -6125,8 +6149,13 @@ function dtTabLoad() {
   var carga = window.nspCarga || [];
   var cad   = window.nspCadastro || [];
 
-  if(rec.length === 0) {
-    return '<div style="padding:40px;text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:24px;color:#F59E0B;margin-bottom:12px">NSP NÃO CARREGADO</div><div style="font-size:13px;color:rgba(122,155,181,.7);margin-bottom:20px">Para ver o cruzamento de dados NSP + resultados, carregue o módulo NSP primeiro.</div><button onclick="dtCarregarNSPeAtualizar()" style="font-family:\'Barlow Condensed\',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:10px 24px;border-radius:4px;cursor:pointer;background:var(--az);color:#000;border:none">Carregar NSP</button></div>';
+  if(rec.length === 0 && cad.length === 0) {
+    // Tenta carregar NSP em background e re-renderiza
+    nspCarregar().then(function(){
+      var content = document.getElementById('dt-tab-content');
+      if(content) content.innerHTML = dtTabLoad();
+    });
+    return '<div style="padding:40px;text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:24px;color:#F59E0B;margin-bottom:12px">CARREGANDO NSP...</div><div style="font-size:13px;color:rgba(122,155,181,.7)">Buscando dados do Núcleo de Saúde e Performance.</div></div>';
   }
 
   var s = '';
